@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0a0b10" />
+  <meta name="description" content="艾泽拉斯：裂隙远征 — 一款魔兽世界同人像素风肉鸽网页游戏。选择战士或法师，穿越五个副本，击败精英首领，收集三选一技能。" />
+  <title>艾泽拉斯：裂隙远征 · 像素肉鸽</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230b0d13'/%3E%3Cpath d='M16 3l4 9 9 4-9 4-4 9-4-9-9-4 9-4z' fill='%23e0b56a'/%3E%3Ccircle cx='16' cy='16' r='4' fill='%23fff1c9'/%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="pixel-skin.css" />
+  <link rel="stylesheet" href="heavy-frames.css" />
+</head>
+<body>
+  <main class="app">
+    <div class="game-shell" id="game-shell">
+      <canvas id="game" width="640" height="360" aria-label="游戏画面"></canvas>
+      <div class="scanlines" aria-hidden="true"></div>
+      <div class="vignette" aria-hidden="true"></div>
+      <div id="damage-flash" aria-hidden="true"></div>
+
+      <!-- ============ HUD ============ -->
+      <div id="hud" class="hidden" aria-live="off">
+        <div class="hud-top">
+          <section class="player-panel panel">
+            <div class="portrait-frame">
+              <img id="hud-crest" class="hud-crest" alt="" />
+              <img id="hud-portrait" alt="职业头像" />
+              <span id="hud-level" class="level-badge">1</span>
+            </div>
+            <div class="player-bars">
+              <div class="name-row">
+                <b id="hud-class-name">战士</b>
+                <span id="hud-role">重甲近战 · 怒气</span>
+                <span id="hud-title" class="hud-title">新兵</span>
+              </div>
+              <div class="bar hp-bar">
+                <i id="hp-fill"></i>
+                <span id="hp-text">195 / 195</span>
+              </div>
+              <div class="bar resource-bar">
+                <i id="resource-fill"></i>
+                <span id="resource-text">35 / 100</span>
+              </div>
+              <div class="xp-row">
+                <span class="xp-label">EXP</span>
+                <div class="bar xp-bar"><i id="xp-fill"></i></div>
+                <span id="xp-text">0 / 55</span>
+              </div>
+            </div>
+            <div id="shield-badge" class="shield-badge hidden">
+              <span>护盾</span><b id="shield-value">0</b>
+            </div>
+            <div id="buff-row" class="buff-row"></div>
+          </section>
+
+          <section id="dungeon-panel" class="dungeon-panel">
+            <div class="dungeon-title">
+              <span id="dungeon-index" class="dungeon-index">副本 1/5</span>
+              <b id="dungeon-name">死亡矿井</b>
+            </div>
+            <div id="objective" class="objective">清除副本小怪</div>
+            <div id="wave-pips" class="wave-pips" aria-label="波次进度"></div>
+          </section>
+
+          <section class="right-panel">
+            <div class="run-stats panel">
+              <div><img src="assets/icons/skull.jpg" alt="" /><span>击杀</span><b id="kills">0</b></div>
+              <div><img src="assets/icons/chest.jpg" alt="" /><span>宝箱</span><b id="chests">0</b></div>
+            </div>
+            <div class="utility-buttons">
+              <button id="music-btn" class="icon-btn" type="button" aria-label="开关声音" title="开关声音">
+                <span class="sound-on">♪</span>
+              </button>
+              <button id="pause-btn" class="icon-btn" type="button" aria-label="暂停游戏" title="暂停 (Esc)">
+                <span>Ⅱ</span>
+              </button>
+            </div>
+          </section>
+        </div>
+
+        <div id="boss-panel" class="boss-panel hidden">
+          <div class="boss-head">
+            <img id="boss-portrait" class="boss-portrait" alt="" />
+            <div class="boss-heading">
+              <div class="boss-name-line">
+                <span class="elite-star">◆</span>
+                <b id="boss-name">埃德温·范克里夫</b>
+                <span class="elite-tag">精英</span>
+              </div>
+              <span id="boss-subtitle" class="boss-subtitle">迪菲亚兄弟会首领</span>
+            </div>
+          </div>
+          <div class="boss-bar">
+            <i id="boss-fill"></i>
+            <div class="boss-phase-marks"><span></span><span></span></div>
+          </div>
+          <div id="boss-cast" class="boss-cast hidden">
+            <img id="boss-cast-icon" class="boss-cast-icon" alt="" />
+            <div class="boss-cast-track">
+              <i id="boss-cast-fill"></i><span id="boss-cast-text">施放：剑刃突袭</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="minimap-wrap">
+          <canvas id="minimap" width="132" height="132" aria-label="小地图"></canvas>
+          <img class="minimap-ring" src="assets/ui/minimap_ring.png" alt="" />
+          <span class="minimap-label">艾泽拉斯</span>
+        </div>
+
+        <div id="wave-announce" class="wave-announce"></div>
+        <div id="toast-layer" class="toast-layer"></div>
+
+        <div id="interact-prompt" class="interact-prompt hidden">
+          <kbd>F</kbd><span id="interact-text">进入传送门</span>
+        </div>
+
+        <div id="ability-bar" class="ability-bar" aria-label="技能栏">
+          <div id="basic-slot" class="basic-slot"></div>
+          <div class="ability-divider"></div>
+          <div id="ability-slots" class="ability-slots"></div>
+          <button id="auto-attack-btn" class="auto-attack-btn is-on" type="button" aria-pressed="true" title="自动攻击 (T)">
+            <i class="auto-dot"></i><b>AUTO</b>
+          </button>
+        </div>
+
+        <div id="passive-bar" class="passive-bar" aria-label="被动天赋">
+          <span id="passive-label" class="passive-label">被动</span>
+          <div id="passive-row" class="passive-row"></div>
+        </div>
+
+        <div class="hint-bar">
+          <span><kbd>WASD</kbd> 移动</span>
+          <span><kbd>鼠标</kbd> 瞄准</span>
+          <span><kbd>左键</kbd> 攻击</span>
+          <span><kbd>1-4</kbd> 技能</span>
+          <span><kbd>T</kbd> 自动攻击</span>
+          <span><kbd>F</kbd> 传送</span>
+        </div>
+      </div>
+
+      <div id="achievement-popup" class="achievement-popup" aria-live="polite">
+        <div class="ach-popup-glow"></div>
+        <img id="ach-popup-icon" alt="" />
+        <div class="ach-popup-copy">
+          <span>成就解锁</span>
+          <strong id="ach-popup-name">踏上远征</strong>
+        </div>
+        <em id="ach-popup-points">+5 成就点</em>
+      </div>
+
+      <!-- ============ 舞台横幅 ============ -->
+      <div id="stage-banner" class="stage-banner" aria-live="polite">
+        <span id="stage-banner-index" class="banner-index">副本 01</span>
+        <h2 id="stage-banner-name">死亡矿井</h2>
+        <p id="stage-banner-sub">迪菲亚兄弟会的秘密据点</p>
+        <div class="banner-rule"><i></i><span>◆</span><i></i></div>
+        <div class="banner-boss-row">
+          <div class="banner-boss-portrait"><img id="stage-boss-portrait" alt="" /></div>
+          <div id="stage-banner-objective" class="banner-objective">精英首领 · 埃德温·范克里夫</div>
+        </div>
+      </div>
+
+      <!-- ============ 标题界面 ============ -->
+      <div id="title-screen" class="screen title-screen">
+        <img id="title-crest-warrior" class="title-crest title-crest-left" alt="" />
+        <img id="title-crest-mage" class="title-crest title-crest-right" alt="" />
+        <div class="title-bg-glow"></div>
+        <div class="title-content">
+          <div class="title-lockup">
+            <span class="title-gem" aria-hidden="true"></span>
+            <div class="title-kicker"><span></span>WARCRAFT · PIXEL ROGUELIKE<span></span></div>
+            <h1 class="game-logo">
+              <span class="logo-top">艾泽拉斯</span>
+              <strong>裂隙远征</strong>
+            </h1>
+            <p class="title-tagline">五次副本 · 三位英雄 · 一条命</p>
+            <p class="title-pitch">击败小怪升级 · 精英必掉宝箱 · 三选一构筑你的英雄</p>
+            <div class="title-rule"><i></i><b>◆</b><i></i></div>
+          </div>
+
+          <div class="class-heading">
+            <span>选择你的职业</span>
+            <em>CHOOSE YOUR HERO</em>
+          </div>
+
+          <div class="class-select" id="class-select">
+            <button class="class-card" data-class="warrior" type="button" style="--accent:#c79c6e; --accent-soft:rgba(199,156,110,.22)">
+              <span class="card-shine"></span>
+              <img id="crest-warrior" class="class-crest-watermark" alt="" />
+              <div class="class-emblem"><img src="assets/classes/warrior.jpg" alt="" /></div>
+              <div class="class-top">
+                <div class="class-portrait-wrap"><img id="portrait-warrior" class="class-portrait" alt="战士头像" /></div>
+                <div class="class-id">
+                  <span class="class-en">WARRIOR</span>
+                  <strong>战士</strong>
+                  <span class="class-role">重甲近战 · 怒气</span>
+                </div>
+                <span class="class-check">✓</span>
+              </div>
+              <p class="class-desc">铁甲、怒气与巨刃，在敌阵中正面碾压。</p>
+              <div class="class-stats">
+                <div><span>生存</span><i data-value="5"></i></div>
+                <div><span>爆发</span><i data-value="4"></i></div>
+                <div><span>机动</span><i data-value="2"></i></div>
+              </div>
+              <div class="class-start">
+                <img id="skill-warrior" alt="" />
+                <div><span>初始技能</span><b>冲锋</b></div>
+                <em>近战 / 坦克</em>
+              </div>
+            </button>
+
+            <button class="class-card" data-class="mage" type="button" style="--accent:#69ccf0; --accent-soft:rgba(105,204,240,.2)">
+              <span class="card-shine"></span>
+              <img id="crest-mage" class="class-crest-watermark" alt="" />
+              <div class="class-emblem"><img src="assets/classes/mage.jpg" alt="" /></div>
+              <div class="class-top">
+                <div class="class-portrait-wrap"><img id="portrait-mage" class="class-portrait" alt="法师头像" /></div>
+                <div class="class-id">
+                  <span class="class-en">MAGE</span>
+                  <strong>法师</strong>
+                  <span class="class-role">远程爆发 · 法力</span>
+                </div>
+                <span class="class-check">✓</span>
+              </div>
+              <p class="class-desc">冰火、闪现与护盾，在刀尖上起舞。</p>
+              <div class="class-stats">
+                <div><span>生存</span><i data-value="2"></i></div>
+                <div><span>爆发</span><i data-value="5"></i></div>
+                <div><span>机动</span><i data-value="4"></i></div>
+              </div>
+              <div class="class-start">
+                <img id="skill-mage" alt="" />
+                <div><span>初始技能</span><b>冰霜新星</b></div>
+                <em>远程 / 法术</em>
+              </div>
+            </button>
+
+            <button class="class-card" data-class="priest" type="button" style="--accent:#f1dfae; --accent-soft:rgba(241,223,174,.22)">
+              <span class="card-shine"></span>
+              <img id="crest-priest" class="class-crest-watermark" alt="" />
+              <div class="class-emblem"><img src="assets/classes/priest.jpg" alt="" /></div>
+              <div class="class-top">
+                <div class="class-portrait-wrap"><img id="portrait-priest" class="class-portrait" alt="牧师头像" /></div>
+                <div class="class-id">
+                  <span class="class-en">PRIEST</span>
+                  <strong>牧师</strong>
+                  <span class="class-role">神圣治疗 · 法力</span>
+                </div>
+                <span class="class-check">✓</span>
+              </div>
+              <p class="class-desc">圣光、恢复与护盾，把每一道伤口变成反击。</p>
+              <div class="class-stats">
+                <div><span>生存</span><i data-value="3"></i></div>
+                <div><span>爆发</span><i data-value="3"></i></div>
+                <div><span>机动</span><i data-value="4"></i></div>
+              </div>
+              <div class="class-start">
+                <img id="skill-priest" alt="" />
+                <div><span>初始技能</span><b>神圣之火</b></div>
+                <em>远程 / 治疗</em>
+              </div>
+            </button>
+          </div>
+
+          <div class="title-actions">
+            <button id="start-btn" class="btn-primary" type="button" disabled>
+              <span class="btn-sm" id="start-btn-text">选择职业后出发</span>
+              <span class="btn-lg">开始远征</span>
+            </button>
+            <button id="title-achievements-btn" class="btn-secondary achievement-entry" type="button" title="查看战团成就">
+              <img src="assets/icons/achievement.jpg" alt="" />
+              <span>成就</span><b id="title-ach-count">0</b>
+            </button>
+          </div>
+
+          <div class="title-controls">
+            <span><kbd>WASD</kbd> 移动</span>
+            <span><kbd>鼠标</kbd> 瞄准 / 攻击</span>
+            <span><kbd>1-4</kbd> 职业技能</span>
+            <span><kbd>F</kbd> 进入传送门</span>
+            <span><kbd>Esc</kbd> 暂停</span>
+          </div>
+
+          <p id="touch-hint" class="touch-hint hidden">本作需要键盘与鼠标操作，建议在电脑上游玩。</p>
+          <p class="title-footnote">非官方同人作品 · 魔兽世界及相关名称版权归 Blizzard Entertainment 所有</p>
+        </div>
+      </div>
+
+      <!-- ============ 三选一 ============ -->
+      <div id="card-screen" class="screen card-screen hidden" role="dialog" aria-modal="true" aria-labelledby="card-title">
+        <div class="card-modal">
+          <header class="card-header">
+            <img id="choice-emblem" class="choice-emblem" src="assets/icons/chest.jpg" alt="" />
+            <div class="loot-kicker"><span></span><b id="choice-kicker">战利品</b><span></span></div>
+            <h2 id="card-title">选择你的力量</h2>
+            <p id="choice-subtitle">从三件战利品中挑选一件。主动技能进入技能栏，被动天赋立即生效。</p>
+          </header>
+          <div id="choice-cards" class="choice-cards"></div>
+          <footer class="card-footer">
+            <span><span id="choice-footer-label">主动技能</span> <b id="active-count">1 / 4</b></span>
+            <span>按 <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> 快速选择</span>
+          </footer>
+        </div>
+      </div>
+
+      <!-- ============ 暂停 ============ -->
+      <div id="pause-screen" class="screen pause-screen hidden" role="dialog" aria-modal="true" aria-labelledby="pause-title">
+        <div class="pause-panel panel">
+          <div class="pause-rune">◆</div>
+          <span class="menu-kicker">EXPEDITION PAUSED</span>
+          <h2 id="pause-title">远征暂停</h2>
+          <p>艾泽拉斯的时间暂时凝固了。</p>
+          <div id="pause-build" class="pause-build"></div>
+          <div class="pause-actions">
+            <button id="resume-btn" class="btn-primary small" type="button">继续远征</button>
+            <button id="restart-btn" class="btn-secondary" type="button">重新开始</button>
+            <button id="pause-achievements-btn" class="btn-secondary achievement-entry" type="button">
+              <img src="assets/icons/achievement.jpg" alt="" />
+              <span>成就殿堂</span><b id="pause-ach-count">0</b>
+            </button>
+            <button id="quit-btn" class="btn-ghost" type="button">返回标题</button>
+          </div>
+          <div class="pause-keys">
+            <span><kbd>WASD</kbd> 移动</span>
+            <span><kbd>左键</kbd> 普通攻击</span>
+            <span><kbd>1-4</kbd> 技能</span>
+            <span><kbd>F</kbd> 传送</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ 成就殿堂 ============ -->
+      <div id="achievement-screen" class="screen achievement-screen hidden" role="dialog" aria-modal="true" aria-labelledby="achievement-title">
+        <div class="achievement-panel">
+          <header class="ach-header">
+            <span class="ach-kicker">WARBAND ACHIEVEMENTS</span>
+            <h2 id="achievement-title">战团成就</h2>
+            <p>每一次倒下与胜利，都会在艾泽拉斯留下记录。</p>
+            <div class="ach-summary">
+              <div class="ach-summary-item"><span>成就点</span><b id="ach-points">0</b></div>
+              <div class="ach-summary-item"><span>已解锁</span><b id="ach-count">0 / 22</b></div>
+              <div class="ach-summary-item"><span>当前称号</span><b id="ach-title">新兵</b></div>
+            </div>
+            <div class="ach-progress-bar"><i id="ach-progress-fill"></i></div>
+          </header>
+          <div id="ach-filters" class="ach-filters"></div>
+          <div id="ach-grid" class="ach-grid"></div>
+          <footer class="ach-footer">
+            <span>滚动查看全部成就 · 进度自动保存在本地</span>
+            <button id="ach-close-btn" class="btn-primary small" type="button">返回</button>
+          </footer>
+        </div>
+      </div>
+
+      <!-- ============ 结算 ============ -->
+      <div id="end-screen" class="screen end-screen hidden" role="dialog" aria-modal="true" aria-labelledby="end-title">
+        <div class="end-panel">
+          <img id="end-class-crest" class="end-class-crest" alt="" />
+          <div id="end-sigil" class="end-sigil">◆</div>
+          <span id="end-kicker" class="menu-kicker">EXPEDITION ENDED</span>
+          <h2 id="end-title">你倒下了</h2>
+          <p id="end-subtitle">但传说会记住每一个挑战者。</p>
+          <div id="end-stats" class="end-stats"></div>
+          <div class="end-actions">
+            <button id="retry-btn" class="btn-primary small" type="button">再次远征</button>
+            <button id="end-achievements-btn" class="btn-secondary" type="button">成就殿堂</button>
+            <button id="end-title-btn" class="btn-ghost" type="button">返回标题</button>
+          </div>
+          <div id="end-record" class="end-record"></div>
+        </div>
+      </div>
+
+      <!-- 技能提示 -->
+      <div id="tooltip" class="tooltip hidden" role="tooltip"></div>
+
+      <div class="frame-corners" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+    </div>
+  </main>
+
+  <script src="src/data.js"></script>
+  <script src="src/assets.js"></script>
+  <script src="src/art.js"></script>
+  <script src="src/audio.js"></script>
+  <script src="src/achievements.js"></script>
+  <script src="src/game.js"></script>
+  <script src="src/combat.js"></script>
+  <script src="src/render.js"></script>
+</body>
+</html>
