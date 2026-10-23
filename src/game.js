@@ -93,6 +93,7 @@
     choiceFooterLabel: $('choice-footer-label'),
     cardTitle: $('card-title'),
     activeCount: $('active-count'),
+    rerollBtn: $('reroll-btn'),
     pauseScreen: $('pause-screen'),
     pauseBuild: $('pause-build'),
     endScreen: $('end-screen'),
@@ -159,6 +160,8 @@
     activeChest: null,
     choiceContext: null,
     levelChoices: [],
+    rerolls: 1,
+    bossRelicDone: false,
     time: 0,
     visualTime: 0,
     hintTimer: 0,
@@ -234,6 +237,7 @@
       R.updateMusicButton();
     });
     if (R.UI.autoAttackBtn) R.UI.autoAttackBtn.addEventListener('click', () => R.toggleAutoAttack());
+    if (R.UI.rerollBtn) R.UI.rerollBtn.addEventListener('click', () => R.rerollChoices());
     $('resume-btn').addEventListener('click', () => R.resumeGame());
     $('restart-btn').addEventListener('click', () => {
       const c = R.game.classId || R.selectedClass || 'warrior';
@@ -298,7 +302,7 @@
 
   function onKeyDown(e) {
     const code = e.code;
-    if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Space', 'KeyT', 'Digit1', 'Digit2', 'Digit3', 'Digit4', 'Numpad1', 'Numpad2', 'Numpad3', 'Numpad4', 'Escape'].includes(code)) {
+    if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Space', 'KeyT', 'KeyR', 'Digit1', 'Digit2', 'Digit3', 'Digit4', 'Numpad1', 'Numpad2', 'Numpad3', 'Numpad4', 'Escape'].includes(code)) {
       if (!e.repeat) e.preventDefault();
     }
     if (window.Achievements && Achievements.isOpen()) {
@@ -322,6 +326,7 @@
       return;
     }
     if (R.game.mode === 'cards') {
+      if (code === 'KeyR') { R.rerollChoices(); return; }
       let idx = -1;
       if (code === 'Digit1' || code === 'Numpad1') idx = 0;
       if (code === 'Digit2' || code === 'Numpad2') idx = 1;
@@ -409,6 +414,8 @@
       abilities: [cls.startingAbility],
       passives: {},
       runes: {},
+      relics: [],
+      curses: [],
       cooldowns: {},
       attackCd: 0,
       attackAnim: 0,
@@ -465,6 +472,16 @@
     let basicSizeMult = 1;
     let basicSpeedMult = 1;
     let basicSplit = 0;
+    let costMult = 1;
+    let aoeMult = 1;
+    let aoeDamageMult = 1;
+    let damageTakenMult = 1;
+    let atonementMult = 1;
+    let lifesteal = 0;
+    let lowHpDamageMult = 1;
+    let overhealShield = false;
+    const relics = p.relics || [];
+    const curses = p.curses || [];
 
     // 战士
     if (p.classId === 'warrior') {
@@ -497,6 +514,20 @@
     dmgMult += rank('sharpened') * .06;
     speedMult *= 1 + rank('swiftness') * .05;
 
+    // 首领遗物
+    if (relics.includes('bloodPact')) { dmgMult *= 1.25; maxHp *= .85; lifesteal = Math.max(lifesteal, .03); }
+    if (relics.includes('ironBulwark')) { maxHp *= 1.2; dr += .08; speedMult *= .92; }
+    if (relics.includes('stormEye')) { aoeMult *= 1.25; aoeDamageMult *= 1.1; }
+    if (relics.includes('arcaneOverload')) { dmgMult *= 1.18; cdrMult *= .9; costMult *= 1.15; }
+    if (relics.includes('holyEcho')) { healMult *= 1.25; overhealShield = true; }
+    if (relics.includes('shadowPact')) { dmgMult *= 1.25; healMult *= .8; atonementMult *= 2; }
+
+    // 诅咒交易
+    if (curses.includes('reckless')) { basicSpeedMult += .35; maxHp *= .75; }
+    if (curses.includes('glassCannon')) { dmgMult *= 1.45; damageTakenMult *= 1.25; }
+    if (curses.includes('manaBurn')) { dmgMult *= 1.3; costMult *= 1.2; }
+    if (curses.includes('desperate')) { healMult *= .7; lowHpDamageMult *= 1.5; }
+
     p.maxHp = Math.round(maxHp);
     p.maxResource = Math.round(maxResource);
     p.resourceRegen = resourceRegen;
@@ -512,6 +543,14 @@
     p.basicSizeMult = basicSizeMult;
     p.basicSpeedMult = basicSpeedMult;
     p.basicSplit = basicSplit;
+    p.costMult = costMult;
+    p.aoeMult = aoeMult;
+    p.aoeDamageMult = aoeDamageMult;
+    p.damageTakenMult = damageTakenMult;
+    p.atonementMult = atonementMult;
+    p.lifesteal = lifesteal;
+    p.lowHpDamageMult = lowHpDamageMult;
+    p.overhealShield = overhealShield;
     if (full) {
       p.hp = p.maxHp;
       p.resource = p.maxResource;
@@ -627,11 +666,51 @@
         used.add(replacement.skill.id);
       }
     }
+    // 诅咒交易：偶尔用一张高风险牌替换一个选项
+    const availableCurses = D.CURSES.filter((c) => !(p.curses || []).includes(c.id));
+    if (availableCurses.length && (p.curses || []).length < 2 && p.level >= 2 && Math.random() < .18) {
+      const idx = Math.floor(Math.random() * picked.length);
+      picked[idx] = { skill: R.pick(availableCurses), curse: true };
+    }
     return picked.map((x) => {
       const s = x.skill;
       const rank = s.type === 'passive' ? (p.passives[s.id] || 0) + 1 : s.type === 'rune' ? 1 : null;
-      return { skill: s, generic: !!x.generic, rank };
+      return { skill: s, generic: !!x.generic, curse: !!x.curse, rank };
     });
+  };
+
+  R.rollRelics = function () {
+    const p = R.game.player;
+    const owned = new Set((p && p.relics) || []);
+    const pool = D.BOSS_RELICS.filter((r) => (!r.classOnly || r.classOnly === p.classId) && !owned.has(r.id));
+    const picks = [];
+    while (picks.length < 3 && pool.length) {
+      picks.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
+    }
+    return picks.map((s) => ({ skill: s, relic: true, rank: null }));
+  };
+
+  R.startBossRelicChoice = function (chest) {
+    R.startChoice({ source: 'relic', chest });
+  };
+
+  R.rerollChoices = function () {
+    const g = R.game;
+    if (g.mode !== 'cards' || !g.rerolls) return;
+    g.rerolls--;
+    const ctx = g.choiceContext || {};
+    g.choices = ctx.source === 'relic' ? R.rollRelics() : R.rollChoices();
+    R.renderChoices(g.choices);
+    AudioEngine.sfx('select');
+  };
+
+  R.updateRerollUI = function () {
+    const btn = R.UI.rerollBtn;
+    if (!btn) return;
+    const n = R.game.rerolls || 0;
+    btn.classList.toggle('hidden', n <= 0);
+    const num = btn.querySelector('b');
+    if (num) num.textContent = String(n);
   };
 
   R.startChoice = function (context) {
@@ -641,7 +720,7 @@
     const ctx = context || { source: 'chest' };
     g.choiceContext = ctx;
     g.activeChest = ctx.chest || null;
-    g.choices = R.rollChoices();
+    g.choices = ctx.source === 'relic' ? R.rollRelics() : R.rollChoices();
     g.mode = 'cards';
     AudioEngine.setDucked(true);
     const popup = document.getElementById('achievement-popup');
@@ -679,7 +758,41 @@
     const p = g.player;
     const s = choice.skill;
     const context = g.choiceContext || { source: g.activeChest ? 'chest' : 'levelup' };
-    if (s.type === 'active') {
+    if (s.type === 'relic') {
+      p.relics = p.relics || [];
+      p.relics.push(s.id);
+      if (s.id === 'fateDie') g.rerolls = (g.rerolls || 0) + 1;
+      R.recalcStats(p);
+      R.toast('获得首领遗物 · ' + s.name, 'epic', s.icon);
+      AudioEngine.sfx('select');
+      const chest = context.chest || g.activeChest || null;
+      g.activeChest = null;
+      g.choices = [];
+      g.choiceContext = null;
+      R.rebuildAbilityBar();
+      R.updateHUD();
+      R.UI.cardScreen.classList.add('hidden');
+      R.UI.cardScreen.classList.remove('levelup');
+      AudioEngine.setDucked(false);
+      g.mode = 'playing';
+      if (chest && chest.kind === 'boss') {
+        const idx = g.chests.indexOf(chest);
+        if (idx >= 0) g.chests.splice(idx, 1);
+        R.spawnPortal(chest.x, chest.y);
+        g.phase = 'portal';
+        R.updateObjective('进入传送门');
+        R.announce('通道已开启');
+        AudioEngine.sfx('portal');
+      }
+      if (g.levelChoices.length) R.startNextLevelChoice();
+      return;
+    }
+    if (s.type === 'curse') {
+      p.curses = p.curses || [];
+      p.curses.push(s.id);
+      R.recalcStats(p);
+      R.toast('接受诅咒 · ' + s.name, 'epic', s.icon);
+    } else if (s.type === 'active') {
       if (p.abilities.length >= D.BALANCE.maxActives) {
         R.toast('主动技能栏已满', 'warn');
         return;
@@ -725,6 +838,11 @@
       const idx = g.chests.indexOf(chest);
       if (idx >= 0) g.chests.splice(idx, 1);
       if (chest.kind === 'boss') {
+        if (!g.bossRelicDone) {
+          g.bossRelicDone = true;
+          R.startBossRelicChoice(chest);
+          return;
+        }
         R.spawnPortal(chest.x, chest.y);
         g.phase = 'portal';
         R.updateObjective('进入传送门');
@@ -758,6 +876,8 @@
     g.activeChest = null;
     g.choiceContext = null;
     g.levelChoices = [];
+    g.rerolls = 1;
+    g.bossRelicDone = false;
     g.hintTimer = 16;
     g.phase = 'intro';
     g.boss = null;
@@ -831,6 +951,7 @@
     g.boss = null;
     g.bossDefeated = false;
     g.bossChest = null;
+    g.bossRelicDone = false;
     if (R.UI.toastLayer) R.UI.toastLayer.innerHTML = '';
     g.phase = 'intro';
     g.wave = 0;

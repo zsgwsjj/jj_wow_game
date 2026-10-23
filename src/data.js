@@ -576,6 +576,67 @@
 
   const WAVE_TOTAL = 3;
 
+  const BOSS_RELICS = [
+    {
+      id: 'bloodPact', type: 'relic', name: '鲜血契约', icon: 'heart', rarity: 'relic',
+      tag: '首领遗物 · 伤害', flavor: '以血为墨，写下更锋利的名字。',
+      desc: () => '伤害 +25%，最大生命 -15%；造成直接伤害时回复 3% 生命。'
+    },
+    {
+      id: 'ironBulwark', type: 'relic', name: '不屈壁垒', icon: 'shield', rarity: 'relic',
+      tag: '首领遗物 · 生存', flavor: '城墙会倒，守墙的人不会。',
+      desc: () => '最大生命 +20%，减伤 +8%，移动速度 -8%。'
+    },
+    {
+      id: 'stormEye', type: 'relic', name: '风暴之眼', icon: 'wind', rarity: 'relic',
+      tag: '首领遗物 · 范围', flavor: '风暴的中心，反而最安静。',
+      desc: () => '范围技能半径 +25%，范围伤害 +10%。'
+    },
+    {
+      id: 'arcaneOverload', type: 'relic', name: '奥术过载', icon: 'arcane', rarity: 'relic',
+      tag: '首领遗物 · 法术', flavor: '把安全阈值拨到红线之外。',
+      desc: () => '伤害 +18%，技能冷却 -10%，技能消耗 +15%。'
+    },
+    {
+      id: 'holyEcho', type: 'relic', name: '圣光回响', icon: 'holyfire', rarity: 'relic', classOnly: 'priest',
+      tag: '首领遗物 · 治疗', flavor: '光不会消失，只会换一种方式照回来。',
+      desc: () => '治疗量 +25%；过量治疗会转化为护盾（上限 15% 最大生命）。'
+    },
+    {
+      id: 'shadowPact', type: 'relic', name: '暗影契约', icon: 'skull', rarity: 'relic', classOnly: 'priest',
+      tag: '首领遗物 · 救赎', flavor: '圣光与暗影，本就是一体的两面。',
+      desc: () => '伤害 +25%，治疗 -20%，救赎转化效果 +100%。'
+    },
+    {
+      id: 'fateDie', type: 'relic', name: '命运之骰', icon: 'time', rarity: 'relic',
+      tag: '首领遗物 · 选择', flavor: '骰子落地前，命运仍有第二种写法。',
+      desc: () => '立即获得 1 次三选一刷新机会。'
+    }
+  ];
+
+  const CURSES = [
+    {
+      id: 'reckless', type: 'curse', name: '狂徒', icon: 'bloodlust', rarity: 'curse',
+      tag: '诅咒 · 速度', flavor: '疼痛只是提醒你，还活着。',
+      desc: () => '攻击速度 +35%，最大生命 -25%。'
+    },
+    {
+      id: 'glassCannon', type: 'curse', name: '玻璃大炮', icon: 'sharp', rarity: 'curse',
+      tag: '诅咒 · 伤害', flavor: '打出最重的一拳，也别让人碰到你。',
+      desc: () => '伤害 +45%，受到的伤害 +25%。'
+    },
+    {
+      id: 'manaBurn', type: 'curse', name: '法力灼烧', icon: 'mana', rarity: 'curse',
+      tag: '诅咒 · 法术', flavor: '法力在血管里沸腾，烧出更亮的火花。',
+      desc: () => '伤害 +30%，技能消耗 +20%。'
+    },
+    {
+      id: 'desperate', type: 'curse', name: '孤注一掷', icon: 'execute', rarity: 'curse',
+      tag: '诅咒 · 低血量', flavor: '退路越窄，刀锋越利。',
+      desc: () => '生命低于 30% 时伤害 +50%，治疗 -30%。'
+    }
+  ];
+
   const BALANCE = {
     xpCurve: (level) => Math.round(38 + Math.pow(level, 2.05) * 18),
     levelHp: 0.08,
@@ -592,11 +653,13 @@
   const RARITY = {
     common: { label: '普通', color: '#aebbc4' },
     rare: { label: '稀有', color: '#5ab0ff' },
-    epic: { label: '史诗', color: '#c77dff' }
+    epic: { label: '史诗', color: '#c77dff' },
+    relic: { label: '首领遗物', color: '#e5b96e' },
+    curse: { label: '诅咒交易', color: '#e2645b' }
   };
 
   window.GameData = {
-    CLASSES, SKILLS, GENERIC_SKILLS, DUNGEONS, RARITY, BALANCE, WAVE_TOTAL,
+    CLASSES, SKILLS, GENERIC_SKILLS, DUNGEONS, RARITY, BALANCE, WAVE_TOTAL, BOSS_RELICS, CURSES,
     getSkill(classId, id) {
       return (SKILLS[classId] && SKILLS[classId][id]) || GENERIC_SKILLS[id] || null;
     }

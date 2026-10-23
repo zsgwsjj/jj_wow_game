@@ -1276,6 +1276,9 @@
     const p = g.player;
     let adjusted = amount;
     let shatter = false, steam = false, bloodstorm = false;
+    if (!opts.dot && p && p.lowHpDamageMult > 1 && p.hp / p.maxHp < .3) {
+      adjusted *= p.lowHpDamageMult;
+    }
     if (!opts.dot && p) {
       const runes = p.runes || {};
       // 基础联动：火破冰、冰爆燃、流血目标吃旋风
@@ -1301,6 +1304,9 @@
     const dmg = Math.max(1, Math.round(adjusted));
     e.hp -= dmg;
     g.stats.damage += dmg;
+    if (p && p.lifesteal && !opts.dot) {
+      R.healPlayer(dmg * p.lifesteal, '#ff9b8a', { quiet: true });
+    }
     if (!opts.dot) e.hitFlash = .12;
     if (shatter) {
       R.floatText(e.x, e.y - 42, '碎冰!', '#b7f1ff', 8, .8);
@@ -1351,7 +1357,7 @@
     }
     // 牧师被动：救赎（神圣伤害转化为治疗）
     if (p && p.classId === 'priest' && opts.type === 'holy' && !opts.dot && p.passives.atonement) {
-      R.healPlayer(dmg * (.08 + p.passives.atonement * .04), '#ffe7a3', { quiet: true });
+      R.healPlayer(dmg * (.08 + p.passives.atonement * .04) * (p.atonementMult || 1), '#ffe7a3', { quiet: true });
     }
     // 法师被动：点燃 / 寒冰碎片
     if (p && p.classId === 'mage') {
@@ -1399,17 +1405,21 @@
 
   function aoeEnemies(x, y, radius, damage, opts) {
     opts = opts || {};
+    const player = G().player;
+    const radiusMult = player ? (player.aoeMult || 1) : 1;
+    const damageMult = player ? (player.aoeDamageMult || 1) : 1;
+    const rr = radius * radiusMult;
     let hits = 0;
     for (const e of G().enemies.slice()) {
       if (e.dead) continue;
-      if (Math.hypot(e.x - x, e.y - y) <= radius + e.radius) {
-        R.damageEnemy(e, damage, opts);
+      if (Math.hypot(e.x - x, e.y - y) <= rr + e.radius) {
+        R.damageEnemy(e, damage * damageMult, opts);
         hits++;
       }
     }
     for (const prop of G().props || []) {
-      if (prop.breakable && !prop.broken && Math.hypot(prop.x - x, prop.y - y) <= radius + prop.r) {
-        R.damageProp(prop, damage, opts);
+      if (prop.breakable && !prop.broken && Math.hypot(prop.x - x, prop.y - y) <= rr + prop.r) {
+        R.damageProp(prop, damage * damageMult, opts);
       }
     }
     return hits;
@@ -1549,9 +1559,21 @@
     const p = P();
     if (!p || !p.hp || p.hp <= 0) return 0;
     const before = p.hp;
-    p.hp = Math.min(p.maxHp, p.hp + Math.max(0, amount));
-    const healed = p.hp - before;
-    if (healed <= 0) return 0;
+    const raw = Math.max(0, amount);
+    const missing = Math.max(0, p.maxHp - p.hp);
+    const healed = Math.min(missing, raw);
+    p.hp += healed;
+    if (p.overhealShield && raw > healed) {
+      const shieldGain = Math.min(p.maxHp * .15, (raw - healed) * .5);
+      if (shieldGain > 0) {
+        p.shield = Math.min(p.maxHp * .15, (p.shield || 0) + shieldGain);
+        p.shieldTimer = Math.max(p.shieldTimer || 0, 4);
+      }
+    }
+    if (healed <= 0) {
+      if (p.overhealShield) R.updateHUD();
+      return 0;
+    }
     if (!opts.quiet) {
       R.floatText(p.x + rand(-4, 4), p.y - 35, '+' + Math.round(healed), color || '#8cffb0', 6.5, .75);
       R.spawnBurst(p.x, p.y - 12, 5, color || '#8cffb0', 1.2);
@@ -1565,7 +1587,7 @@
     const g = G();
     const p = g.player;
     if (!p || g.mode !== 'playing' || p.iframes > 0) return;
-    let dmg = amount * (1 - p.dr);
+    let dmg = amount * (1 - p.dr) * (p.damageTakenMult || 1);
     if (p.buffs.shieldBlock > 0) dmg *= .75;
     if (p.buffs.iceBarrier > 0) dmg *= .9;
     if (p.passives.focusedWill && p.buffs.focusedWill > 0) dmg *= Math.max(.5, 1 - p.passives.focusedWill * .06);
@@ -1640,7 +1662,8 @@
       }
       return;
     }
-    if (p.resource < (skill.cost || 0)) {
+    const cost = Math.ceil((skill.cost || 0) * (p.costMult || 1));
+    if (p.resource < cost) {
       if (!R._lastDenied || now - R._lastDenied > 600) {
         R._lastDenied = now;
         R.toast(p.cls.resourceName + '不足', 'warn');
@@ -1649,7 +1672,7 @@
       }
       return;
     }
-    p.resource -= skill.cost || 0;
+    p.resource -= cost;
     p.cooldowns[id] = cdOf(p, skill);
     p.attackAnim = Math.max(p.attackAnim, .3);
     castAbility(id, p, skill);

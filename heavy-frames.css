@@ -642,3 +642,82 @@
   background: repeating-linear-gradient(90deg, #5a452b 0 8px, #3d2e1d 8px 10px) !important;
 }
 
+
+/* 首领遗物 / 诅咒 / 刷新 */
+.reroll-btn {
+  position: relative;
+  border: 1px solid #5d492e;
+  background: linear-gradient(180deg, rgba(48, 38, 25, .95), rgba(13, 14, 16, .96));
+  color: #e4c895;
+  padding: .26cqw .78cqw;
+  font-family: var(--pixel);
+  font-size: .6cqw;
+  letter-spacing: .08em;
+  cursor: pointer;
+  box-shadow: inset 0 0 0 1px rgba(255, 226, 164, .04), 0 3px 0 #030202;
+}
+.reroll-btn:hover { filter: brightness(1.12); border-color: #8b6b3d; }
+.reroll-btn b { color: #f4dba5; font-family: var(--mono); margin-left: .25cqw; }
+.reroll-btn.hidden { display: none !important; }
+
+.choice-card.relic {
+  background:
+    linear-gradient(180deg, rgba(121, 88, 42, .16), transparent 38%),
+    linear-gradient(180deg, #1d1a16, #0a0b0d 78%);
+  box-shadow:
+    0 0 0 1px rgba(229, 185, 110, .22),
+    0 0 34px rgba(214, 166, 82, .12),
+    0 18px 38px rgba(0, 0, 0, .68) !important;
+}
+.choice-card.relic .card-rarity { color: #e5b96e !important; }
+.choice-card.relic .card-type { color: #d5ae68 !important; }
+.choice-card.relic .card-pick { border-color: #8b6b3d; color: #f0d7a5; }
+
+.choice-card.curse {
+  background:
+    linear-gradient(180deg, rgba(124, 31, 31, .28), transparent 36%),
+    linear-gradient(180deg, #211516, #0a0b0d 78%);
+  box-shadow:
+    0 0 0 1px rgba(208, 71, 66, .35),
+    0 0 34px rgba(178, 39, 36, .16),
+    0 18px 38px rgba(0, 0, 0, .7) !important;
+}
+.choice-card.curse .card-rarity { color: #e2645b !important; }
+.choice-card.curse .card-type { color: #d47b71 !important; }
+.choice-card.curse .card-pick { border-color: #8f3b35; color: #ffd1c6; }
+.choice-card.curse:hover { filter: brightness(1.08); }
+
+.meta-chip.relic {
+  color: #e5b96e;
+  border-color: #6d5432;
+  background: rgba(73, 53, 27, .32);
+}
+.meta-chip.curse {
+  color: #e88a7e;
+  border-color: #753b35;
+  background: rgba(80, 27, 26, .32);
+}
+
+.build-icon.relic {
+  border-color: #8c6a3e;
+  box-shadow: inset 0 0 0 1px #17110b, 0 0 10px rgba(208, 161, 82, .12);
+}
+
+
+.card-footer {
+  flex-wrap: wrap;
+  gap: .35cqw .8cqw;
+}
+.reroll-btn { margin-left: auto; }
+@media (max-width: 760px) {
+  .card-footer { font-size: .7cqw; }
+  .reroll-btn { font-size: .72cqw; }
+}
+
+.build-icon.curse {
+  border-color: #7f3833;
+  box-shadow: inset 0 0 0 1px #170d0c, 0 0 10px rgba(190, 65, 58, .14);
+}
+.card-footer { font-size: .7cqw; letter-spacing: .035em; }
+.card-footer kbd { font-size: .6cqw; }
+.reroll-btn { font-size: .66cqw; }
