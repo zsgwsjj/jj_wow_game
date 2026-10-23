@@ -954,9 +954,11 @@
       }
       const s = D.getSkill(p.classId, id);
       if (!s) { activeIcons.push('<span class="build-icon empty"></span>'); continue; }
+      const rank = (p.skillRanks && p.skillRanks[id]) || 0;
       activeIcons.push(
-        '<span class="build-icon" title="' + s.name + '">' +
+        '<span class="build-icon" title="' + s.name + (rank ? ' · 技能升级 T' + rank : '') + '">' +
           '<img src="' + Art.makeIcon(s.icon, D.RARITY[s.rarity].color) + '" alt="' + s.name + '" onerror="this.style.display=\'none\'">' +
+          (rank ? '<span class="build-rank">T' + rank + '</span>' : '') +
         '</span>'
       );
     }
@@ -1156,27 +1158,31 @@
     if (UI.choiceKicker) UI.choiceKicker.textContent = isRelic ? '首领遗物 · 三选一' : isLevel ? '等级提升 · 三选一' : '战利品';
     if (UI.cardTitle) UI.cardTitle.textContent = isRelic ? '选择首领遗物' : '选择你的力量';
     const pendingLevels = (g.levelChoices || []).length;
+    const fixedKit = !!(p.cls && p.cls.fixedSkills);
     if (UI.choiceSubtitle) UI.choiceSubtitle.textContent = isRelic
       ? '从三件首领遗物中选择一件。效果整局生效，无法重复获得。'
       : isLevel
-        ? ('Lv.' + (ctx.level || p.level) + ' · 从技能、天赋或联动符文中选择一项，立即生效。' + (pendingLevels ? ' 还有 ' + pendingLevels + ' 次升级待选择。' : ''))
-        : '从三件战利品中挑选一件。主动技能进入技能栏，被动天赋与联动符文立即生效。';
-    if (UI.choiceFooterLabel) UI.choiceFooterLabel.textContent = isRelic ? '已获得遗物' : isLevel ? '升级奖励 · 三选一' : '主动技能';
+        ? ('Lv.' + (ctx.level || p.level) + ' · 从技能升级、天赋或联动符文中选择一项，立即生效。' + (pendingLevels ? ' 还有 ' + pendingLevels + ' 次升级待选择。' : ''))
+        : fixedKit
+          ? '从三件战利品中挑选一件。技能升级、被动天赋与联动符文立即生效。'
+          : '从三件战利品中挑选一件。主动技能进入技能栏，被动天赋与联动符文立即生效。';
+    if (UI.choiceFooterLabel) UI.choiceFooterLabel.textContent = isRelic ? '已获得遗物' : isLevel ? '升级奖励 · 三选一' : fixedKit ? '固定技能' : '主动技能';
     choices.forEach((choice, i) => {
       const s = choice.skill;
       const rarity = D.RARITY[s.rarity] || D.RARITY.rare;
       const rank = choice.rank;
       const isRelicCard = s.type === 'relic';
       const isCurseCard = s.type === 'curse';
+      const isMasteryCard = s.type === 'mastery';
       const desc = (s.type === 'passive' || s.type === 'rune')
         ? s.desc(rank || 1)
-        : (isRelicCard || isCurseCard) ? s.desc() : s.desc(p.level);
-      const typeLabel = isRelicCard ? '首领遗物' : isCurseCard ? '诅咒交易' : s.type === 'passive' ? '被动天赋' : s.type === 'rune' ? '联动符文' : '主动技能';
-      const rankText = (s.type === 'rune' || isRelicCard || isCurseCard) ? '' : (rank ? ' · ' + R.toRoman(rank) : '');
+        : (isRelicCard || isCurseCard || isMasteryCard) ? s.desc() : s.desc(p.level);
+      const typeLabel = isMasteryCard ? '技能升级' : isRelicCard ? '首领遗物' : isCurseCard ? '诅咒交易' : s.type === 'passive' ? '被动天赋' : s.type === 'rune' ? '联动符文' : '主动技能';
+      const rankText = isMasteryCard ? ' · T' + s.tier : (s.type === 'rune' || isRelicCard || isCurseCard) ? '' : (rank ? ' · ' + R.toRoman(rank) : '');
       const tagText = s.type === 'passive' && s.tag ? s.tag.replace(/^被动\s*·\s*/, '') : (s.tag || '');
       const card = document.createElement('button');
       card.type = 'button';
-      card.className = 'choice-card' + (s.type === 'rune' ? ' rune' : '') + (isRelicCard ? ' relic' : '') + (isCurseCard ? ' curse' : '');
+      card.className = 'choice-card' + (s.type === 'rune' ? ' rune' : '') + (isRelicCard ? ' relic' : '') + (isCurseCard ? ' curse' : '') + (isMasteryCard ? ' mastery' : '');
       card.style.setProperty('--rarity', rarity.color);
       card.style.setProperty('--delay', (i * .08) + 's');
       const iconSrc = Art.makeIcon(s.icon, rarity.color);
@@ -1187,6 +1193,8 @@
         if (cost) chips.push('<span class="meta-chip hot">◈ <b>' + cost + '</b> ' + p.cls.resourceName + '</span>');
         if (s.cooldown) chips.push('<span class="meta-chip cool">◷ <b>' + (s.cooldown * (p.cdrMult || 1)).toFixed(1) + 's</b></span>');
         if (chips.length) metaHtml = '<div class="card-meta">' + chips.join('') + '</div>';
+      } else if (isMasteryCard) {
+        metaHtml = '<div class="card-meta"><span class="meta-chip mastery">' + s.baseName + ' · T' + s.tier + '</span></div>';
       } else if (isRelicCard) {
         metaHtml = '<div class="card-meta"><span class="meta-chip relic">唯一 · 全局</span></div>';
       } else if (isCurseCard) {
@@ -1210,7 +1218,7 @@
         '<p class="card-desc">' + desc + '</p>' +
         metaHtml +
         '<p class="card-flavor">' + (s.flavor || '') + '</p>' +
-        '<span class="card-pick">' + (isCurseCard ? '接受交易' : isRelicCard ? '取 得' : '选 择') + '</span>';
+        '<span class="card-pick">' + (isCurseCard ? '接受交易' : isRelicCard ? '取 得' : isMasteryCard ? '升 级' : '选 择') + '</span>';
       card.addEventListener('click', () => R.chooseCard(i));
       card.addEventListener('mouseenter', () => AudioEngine.sfx('click'));
       UI.choiceCards.appendChild(card);
@@ -1219,8 +1227,9 @@
       const availableRelics = D.BOSS_RELICS.filter((r) => !r.classOnly || r.classOnly === p.classId).length;
       UI.activeCount.textContent = (p.relics || []).length + ' / ' + availableRelics;
     } else {
+      const fixedKit = !!(p.cls && p.cls.fixedSkills);
       const full = p.abilities.length >= D.BALANCE.maxActives;
-      UI.activeCount.textContent = p.abilities.length + ' / ' + D.BALANCE.maxActives + (full ? '（已满）' : '');
+      UI.activeCount.textContent = p.abilities.length + ' / ' + D.BALANCE.maxActives + (!fixedKit && full ? '（已满）' : '');
     }
     UI.cardScreen.classList.remove('hidden');
     R.updateRerollUI();

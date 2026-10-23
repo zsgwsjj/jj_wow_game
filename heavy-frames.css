@@ -721,3 +721,20 @@
 .card-footer { font-size: .7cqw; letter-spacing: .035em; }
 .card-footer kbd { font-size: .6cqw; }
 .reroll-btn { font-size: .66cqw; }
+.choice-card.mastery {
+  background:
+    linear-gradient(180deg, rgba(35, 91, 116, .24), transparent 38%),
+    linear-gradient(180deg, #121b20, #080b0e 78%);
+  box-shadow:
+    0 0 0 1px rgba(105, 204, 240, .26),
+    0 0 34px rgba(65, 164, 205, .14),
+    0 18px 38px rgba(0, 0, 0, .68) !important;
+}
+.choice-card.mastery .card-rarity { color: #69ccf0 !important; }
+.choice-card.mastery .card-type { color: #8adcf4 !important; }
+.choice-card.mastery .card-pick { border-color: #38677a; color: #c8f2ff; }
+.meta-chip.mastery {
+  color: #9de8ff;
+  border-color: #376273;
+  background: rgba(30, 70, 84, .32);
+}

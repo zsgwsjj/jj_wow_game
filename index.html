@@ -159,7 +159,6 @@
 
       <!-- ============ 标题界面 ============ -->
       <div id="title-screen" class="screen title-screen">
-        <img id="title-crest-warrior" class="title-crest title-crest-left" alt="" />
         <img id="title-crest-mage" class="title-crest title-crest-right" alt="" />
         <div class="title-bg-glow"></div>
         <div class="title-content">
@@ -170,43 +169,17 @@
               <span class="logo-top">艾泽拉斯</span>
               <strong>裂隙远征</strong>
             </h1>
-            <p class="title-tagline">五次副本 · 三位英雄 · 一条命</p>
-            <p class="title-pitch">击败小怪升级 · 精英必掉宝箱 · 三选一构筑你的英雄</p>
+            <p class="title-tagline">五次副本 · 一位法师 · 一条命</p>
+            <p class="title-pitch">固定四技能 · 技能进化 · 三选一构筑你的法师</p>
             <div class="title-rule"><i></i><b>◆</b><i></i></div>
           </div>
 
           <div class="class-heading">
-            <span>选择你的职业</span>
-            <em>CHOOSE YOUR HERO</em>
+            <span>远征法师</span>
+            <em>THE MAGE</em>
           </div>
 
-          <div class="class-select" id="class-select">
-            <button class="class-card" data-class="warrior" type="button" style="--accent:#c79c6e; --accent-soft:rgba(199,156,110,.22)">
-              <span class="card-shine"></span>
-              <img id="crest-warrior" class="class-crest-watermark" alt="" />
-              <div class="class-emblem"><img src="assets/classes/warrior.jpg" alt="" /></div>
-              <div class="class-top">
-                <div class="class-portrait-wrap"><img id="portrait-warrior" class="class-portrait" alt="战士头像" /></div>
-                <div class="class-id">
-                  <span class="class-en">WARRIOR</span>
-                  <strong>战士</strong>
-                  <span class="class-role">重甲近战 · 怒气</span>
-                </div>
-                <span class="class-check">✓</span>
-              </div>
-              <p class="class-desc">铁甲、怒气与巨刃，在敌阵中正面碾压。</p>
-              <div class="class-stats">
-                <div><span>生存</span><i data-value="5"></i></div>
-                <div><span>爆发</span><i data-value="4"></i></div>
-                <div><span>机动</span><i data-value="2"></i></div>
-              </div>
-              <div class="class-start">
-                <img id="skill-warrior" alt="" />
-                <div><span>初始技能</span><b>冲锋</b></div>
-                <em>近战 / 坦克</em>
-              </div>
-            </button>
-
+          <div class="class-select single" id="class-select">
             <button class="class-card" data-class="mage" type="button" style="--accent:#69ccf0; --accent-soft:rgba(105,204,240,.2)">
               <span class="card-shine"></span>
               <img id="crest-mage" class="class-crest-watermark" alt="" />
@@ -228,41 +201,15 @@
               </div>
               <div class="class-start">
                 <img id="skill-mage" alt="" />
-                <div><span>初始技能</span><b>冰霜新星</b></div>
-                <em>远程 / 法术</em>
-              </div>
-            </button>
-
-            <button class="class-card" data-class="priest" type="button" style="--accent:#f1dfae; --accent-soft:rgba(241,223,174,.22)">
-              <span class="card-shine"></span>
-              <img id="crest-priest" class="class-crest-watermark" alt="" />
-              <div class="class-emblem"><img src="assets/classes/priest.jpg" alt="" /></div>
-              <div class="class-top">
-                <div class="class-portrait-wrap"><img id="portrait-priest" class="class-portrait" alt="牧师头像" /></div>
-                <div class="class-id">
-                  <span class="class-en">PRIEST</span>
-                  <strong>牧师</strong>
-                  <span class="class-role">神圣治疗 · 法力</span>
-                </div>
-                <span class="class-check">✓</span>
-              </div>
-              <p class="class-desc">圣光、恢复与护盾，把每一道伤口变成反击。</p>
-              <div class="class-stats">
-                <div><span>生存</span><i data-value="3"></i></div>
-                <div><span>爆发</span><i data-value="3"></i></div>
-                <div><span>机动</span><i data-value="4"></i></div>
-              </div>
-              <div class="class-start">
-                <img id="skill-priest" alt="" />
-                <div><span>初始技能</span><b>神圣之火</b></div>
-                <em>远程 / 治疗</em>
+                <div><span>固定四技能</span><b>冰霜新星 · 闪现</b></div>
+                <em>烈焰风暴 · 寒冰护体</em>
               </div>
             </button>
           </div>
 
           <div class="title-actions">
             <button id="start-btn" class="btn-primary" type="button" disabled>
-              <span class="btn-sm" id="start-btn-text">选择职业后出发</span>
+              <span class="btn-sm" id="start-btn-text">法师 · 准备出发</span>
               <span class="btn-lg">开始远征</span>
             </button>
             <button id="title-achievements-btn" class="btn-secondary achievement-entry" type="button" title="查看战团成就">

@@ -227,6 +227,7 @@
     R.UI.startBtn.addEventListener('click', () => {
       if (R.selectedClass) R.startRun(R.selectedClass);
     });
+    R.selectClass('mage');
 
     // 暂停 / 结算 / 声音
     R.UI.pauseBtn.addEventListener('click', () => R.togglePause());
@@ -240,12 +241,12 @@
     if (R.UI.rerollBtn) R.UI.rerollBtn.addEventListener('click', () => R.rerollChoices());
     $('resume-btn').addEventListener('click', () => R.resumeGame());
     $('restart-btn').addEventListener('click', () => {
-      const c = R.game.classId || R.selectedClass || 'warrior';
+      const c = R.game.classId || R.selectedClass || 'mage';
       R.startRun(c);
     });
     $('quit-btn').addEventListener('click', () => R.returnToTitle());
     R.UI.retryBtn.addEventListener('click', () => {
-      const c = R.game.classId || R.selectedClass || 'warrior';
+      const c = R.game.classId || R.selectedClass || 'mage';
       R.startRun(c);
     });
     R.UI.endTitleBtn.addEventListener('click', () => R.returnToTitle());
@@ -336,7 +337,7 @@
     }
     if (R.game.mode === 'dead' || R.game.mode === 'victory') {
       if (code === 'Enter') {
-        const c = R.game.classId || R.selectedClass || 'warrior';
+        const c = R.game.classId || R.selectedClass || 'mage';
         R.startRun(c);
       }
       return;
@@ -411,7 +412,9 @@
       cdrMult: 1,
       shieldBonus: 1,
       shieldDurBonus: 0,
-      abilities: [cls.startingAbility],
+      abilities: (cls.fixedSkills || [cls.startingAbility]).slice(),
+      skillRanks: {},
+      skillPaths: {},
       passives: {},
       runes: {},
       relics: [],
@@ -428,7 +431,7 @@
       renewTime: 0,
       renewHeal: 0,
       renewTick: 0,
-      buffs: { shieldBlock: 0, iceBarrier: 0, bloodlust: 0, bloodlustStacks: 0, secondWind: 0, focusedWill: 0 },
+      buffs: { shieldBlock: 0, iceBarrier: 0, blinkHaste: 0, bloodlust: 0, bloodlustStacks: 0, secondWind: 0, focusedWill: 0 },
       channel: null,
       dash: null,
       leap: null,
@@ -607,27 +610,69 @@
     g.shake = Math.max(g.shake, 3);
   };
 
+  // ---------- 技能升级 ----------
+  R.skillUp = function (p, skillId, path, tier) {
+    return !!(p && p.skillPaths && p.skillPaths[skillId] === path && (p.skillRanks && p.skillRanks[skillId] || 0) >= tier);
+  };
+
+  R.getSkillUpgradeChoices = function (p) {
+    const choices = [];
+    const all = D.SKILLS[p.classId] || {};
+    for (const skillId of p.abilities) {
+      const base = all[skillId];
+      const def = D.SKILL_UPGRADES[skillId];
+      if (!base || !def) continue;
+      const rank = p.skillRanks[skillId] || 0;
+      if (rank >= 2) continue;
+      if (rank === 0) {
+        for (const [path, data] of Object.entries(def)) {
+          choices.push(R.makeUpgradeChoice(p, skillId, base, path, data, 1));
+        }
+      } else {
+        const path = p.skillPaths[skillId];
+        const data = def[path];
+        if (data) choices.push(R.makeUpgradeChoice(p, skillId, base, path, data, 2));
+      }
+    }
+    return choices;
+  };
+
+  R.makeUpgradeChoice = function (p, skillId, base, path, data, tier) {
+    const skill = {
+      id: 'upgrade_' + skillId + '_' + path + '_' + tier,
+      type: 'mastery',
+      name: data.name + (tier === 2 ? ' II' : ''),
+      icon: data.icon,
+      rarity: tier === 2 ? 'epic' : 'rare',
+      tag: data.tag,
+      desc: () => data.tiers[tier - 1],
+      flavor: data.flavor,
+      forSkill: skillId,
+      baseName: base.name,
+      path,
+      tier
+    };
+    return { skill, weight: tier === 2 ? 2.2 : 3.4, mastery: true };
+  };
+
   // ---------- 技能抽取 ----------
   R.rollChoices = function () {
     const p = R.game.player;
     const classId = p.classId;
     const all = D.SKILLS[classId];
-    const activeFull = p.abilities.length >= D.BALANCE.maxActives;
-    const actives = Object.values(all).filter((s) => s.type === 'active' && !p.abilities.includes(s.id) && !activeFull);
     const passives = Object.values(all).filter((s) => s.type === 'passive' && (p.passives[s.id] || 0) < s.maxRank);
     const runes = Object.values(all).filter((s) => s.type === 'rune' && !(p.runes && p.runes[s.id]));
     const generics = Object.values(D.GENERIC_SKILLS);
+    const upgrades = R.getSkillUpgradeChoices(p);
     const pool = [];
-    actives.forEach((s) => pool.push({ skill: s, weight: activeFull ? 0 : 2.1, generic: false }));
     passives.forEach((s) => pool.push({ skill: s, weight: 1.45, generic: false }));
     runes.forEach((s) => pool.push({ skill: s, weight: 1.55, generic: false, rune: true }));
     generics.forEach((s) => pool.push({ skill: s, weight: .55, generic: true }));
 
     const picked = [];
     const used = new Set();
-    const draw = (onlyActives) => {
-      let candidates = pool.filter((x) => !used.has(x.skill.id) && (!onlyActives || x.skill.type === 'active'));
-      if (!candidates.length) candidates = pool.filter((x) => !used.has(x.skill.id));
+    const draw = () => {
+      const candidates = pool.filter((x) => !used.has(x.skill.id));
       if (!candidates.length) return null;
       const total = candidates.reduce((sum, x) => sum + x.weight, 0);
       let roll = Math.random() * total;
@@ -641,41 +686,34 @@
       return chosen;
     };
 
-    // 如果有主动技能，至少较大概率提供一个
-    if (actives.length && Math.random() < .78) draw(true);
-    while (picked.length < 3) {
-      if (!draw(false)) break;
+    // 固定四技能后，升级三选一至少出现一张已装备技能的升级卡
+    if (upgrades.length) {
+      const first = R.pick(upgrades);
+      used.add(first.skill.id);
+      picked.push(first);
     }
-    // 兜底：通用技能可重复
+    while (picked.length < 3) {
+      if (!draw()) break;
+    }
+    // 兜底：通用被动可重复
     let guard = 0;
     while (picked.length < 3 && guard++ < 30) {
       const s = R.pick(generics);
       picked.push({ skill: s, weight: 0, generic: true });
     }
-    // 每次三选一最多出现两个主动技能，保证至少一个被动选项
-    let activePicks = picked.filter((x) => x.skill.type === 'active');
-    if (activePicks.length > 2) {
-      const passivePool = [
-        ...passives.filter((s) => !used.has(s.id)).map((s) => ({ skill: s, generic: false })),
-        ...generics.map((s) => ({ skill: s, generic: true }))
-      ];
-      for (let i = 2; i < activePicks.length; i++) {
-        const idx = picked.indexOf(activePicks[i]);
-        const replacement = passivePool.length ? R.pick(passivePool) : { skill: R.pick(generics), generic: true };
-        picked[idx] = replacement;
-        used.add(replacement.skill.id);
-      }
-    }
     // 诅咒交易：偶尔用一张高风险牌替换一个选项
     const availableCurses = D.CURSES.filter((c) => !(p.curses || []).includes(c.id));
     if (availableCurses.length && (p.curses || []).length < 2 && p.level >= 2 && Math.random() < .18) {
-      const idx = Math.floor(Math.random() * picked.length);
-      picked[idx] = { skill: R.pick(availableCurses), curse: true };
+      const replaceable = picked.map((x, i) => ({ x, i })).filter((entry) => !entry.x.mastery);
+      if (replaceable.length) {
+        const idx = R.pick(replaceable).i;
+        picked[idx] = { skill: R.pick(availableCurses), curse: true };
+      }
     }
     return picked.map((x) => {
       const s = x.skill;
-      const rank = s.type === 'passive' ? (p.passives[s.id] || 0) + 1 : s.type === 'rune' ? 1 : null;
-      return { skill: s, generic: !!x.generic, curse: !!x.curse, rank };
+      const rank = s.type === 'passive' ? (p.passives[s.id] || 0) + 1 : s.type === 'rune' ? 1 : s.type === 'mastery' ? s.tier : null;
+      return { skill: s, generic: !!x.generic, curse: !!x.curse, mastery: !!x.mastery, rank };
     });
   };
 
@@ -758,7 +796,11 @@
     const p = g.player;
     const s = choice.skill;
     const context = g.choiceContext || { source: g.activeChest ? 'chest' : 'levelup' };
-    if (s.type === 'relic') {
+    if (s.type === 'mastery') {
+      p.skillRanks[s.forSkill] = s.tier;
+      p.skillPaths[s.forSkill] = s.path;
+      R.toast('技能升级 · ' + s.baseName + ' · ' + s.name, s.tier === 2 ? 'epic' : 'good', s.icon);
+    } else if (s.type === 'relic') {
       p.relics = p.relics || [];
       p.relics.push(s.id);
       if (s.id === 'fateDie') g.rerolls = (g.rerolls || 0) + 1;
@@ -860,7 +902,7 @@
 
   // ---------- 流程 ----------
   R.startRun = function (classId) {
-    if (!D.CLASSES[classId]) classId = R.selectedClass || 'warrior';
+    if (!D.CLASSES[classId]) classId = R.selectedClass || 'mage';
     AudioEngine.unlock();
     AudioEngine.setMood(0);
     AudioEngine.startMusic();
@@ -975,7 +1017,7 @@
     p.iframes = .5;
     p.aim = -Math.PI / 2;
     p.cooldowns = {};
-    p.buffs = { shieldBlock: 0, iceBarrier: 0, bloodlust: 0, bloodlustStacks: 0, secondWind: 0 };
+    p.buffs = { shieldBlock: 0, iceBarrier: 0, blinkHaste: 0, bloodlust: 0, bloodlustStacks: 0, secondWind: 0, focusedWill: 0 };
     if (!initial) {
       p.hp = Math.min(p.maxHp, p.hp + p.maxHp * .25);
       p.resource = Math.min(p.maxResource, p.resource + p.maxResource * .5);

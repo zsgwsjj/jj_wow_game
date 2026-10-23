@@ -106,29 +106,9 @@
       value: (s) => s.noHitBosses
     },
     {
-      id: 'full_actives', category: 'challenge', points: 15, name: '技能满编',
-      desc: '单局同时拥有 4 个主动技能。', icon: 'whirlwind', target: 1,
-      value: (s) => s.fullActives
-    },
-    {
-      id: 'warrior_clear', category: 'class', points: 20, name: '战士的荣耀',
-      desc: '使用战士完成五副本远征。', image: 'assets/classes/warrior.jpg', target: 1,
-      value: (s) => (s.classesCleared && s.classesCleared.warrior ? 1 : 0)
-    },
-    {
-      id: 'mage_clear', category: 'class', points: 20, name: '法师的荣耀',
+      id: 'mage_clear', category: 'class', points: 30, name: '法师的荣耀',
       desc: '使用法师完成五副本远征。', image: 'assets/classes/mage.jpg', target: 1,
       value: (s) => (s.classesCleared && s.classesCleared.mage ? 1 : 0)
-    },
-    {
-      id: 'priest_clear', category: 'class', points: 20, name: '牧师的荣耀',
-      desc: '使用牧师完成五副本远征。', image: 'assets/classes/priest.jpg', target: 1,
-      value: (s) => (s.classesCleared && s.classesCleared.priest ? 1 : 0)
-    },
-    {
-      id: 'all_classes', category: 'class', points: 40, name: '三职大师',
-      desc: '使用战士、法师与牧师各通关一次。', icon: 'victory', target: 3,
-      value: (s) => countTrue(s.classesCleared)
     },
     {
       id: 'first_victory', category: 'expedition', points: 25, name: '裂隙征服者',
@@ -150,7 +130,7 @@
       choices: 0, epicChoices: 0,
       highestStage: 0, highestLevel: 1,
       noHitBosses: 0, noHitLichKing: 0, fullActives: 0,
-      classesCleared: { warrior: false, mage: false, priest: false },
+      classesCleared: { mage: false },
       bossesDefeated: { vancleef: false, mutanus: false, arugal: false, thaurissan: false, lichking: false }
     };
   }
@@ -165,7 +145,7 @@
     base.createdAt = raw.createdAt || base.createdAt;
     const s = raw.stats || {};
     base.stats = Object.assign(base.stats, s);
-    base.stats.classesCleared = Object.assign({ warrior: false, mage: false, priest: false }, s.classesCleared || {});
+    base.stats.classesCleared = Object.assign({ mage: false }, s.classesCleared || {});
     base.stats.bossesDefeated = Object.assign(
       { vancleef: false, mutanus: false, arugal: false, thaurissan: false, lichking: false },
       s.bossesDefeated || {}

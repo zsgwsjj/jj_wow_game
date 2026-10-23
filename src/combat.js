@@ -33,7 +33,10 @@
   }
 
   function cdOf(p, skill) {
-    return skill.cooldown * (p.cdrMult || 1);
+    let cd = skill.cooldown * (p.cdrMult || 1);
+    if (skill.id === 'blink' && R.skillUp(p, 'blink', 'b', 1)) cd *= .75;
+    if (skill.id === 'flamestrike' && R.skillUp(p, 'flamestrike', 'b', 2)) cd *= .8;
+    return cd;
   }
 
   function aimAtMouse(p) {
@@ -148,7 +151,7 @@
       if (p.shieldTimer <= 0) { p.shield = 0; p.shieldTimer = 0; }
     }
     // buff 计时
-    for (const k of ['shieldBlock', 'iceBarrier']) {
+    for (const k of ['shieldBlock', 'iceBarrier', 'blinkHaste']) {
       if (p.buffs[k] > 0) {
         p.buffs[k] = Math.max(0, p.buffs[k] - dt);
       }
@@ -195,7 +198,9 @@
         if (mx || my) {
           const l = Math.hypot(mx, my);
           mx /= l; my /= l;
-          const speed = p.speedBase * p.speedMult * (p.slow > 0 ? .55 : 1) * (p.channel ? .78 : 1);
+          const blinkHaste = p.buffs.blinkHaste > 0 ? 1.25 : 1;
+          const barrierHaste = R.skillUp(p, 'iceBarrier', 'b', 2) && p.buffs.iceBarrier > 0 ? 1.1 : 1;
+          const speed = p.speedBase * p.speedMult * blinkHaste * barrierHaste * (p.slow > 0 ? .55 : 1) * (p.channel ? .78 : 1);
           p.x += mx * speed * dt;
           p.y += my * speed * dt;
           p.moving = true;
@@ -1589,7 +1594,7 @@
     if (!p || g.mode !== 'playing' || p.iframes > 0) return;
     let dmg = amount * (1 - p.dr) * (p.damageTakenMult || 1);
     if (p.buffs.shieldBlock > 0) dmg *= .75;
-    if (p.buffs.iceBarrier > 0) dmg *= .9;
+    if (p.buffs.iceBarrier > 0) dmg *= R.skillUp(p, 'iceBarrier', 'a', 2) ? .82 : .9;
     if (p.passives.focusedWill && p.buffs.focusedWill > 0) dmg *= Math.max(.5, 1 - p.passives.focusedWill * .06);
     dmg = Math.max(1, dmg);
     let remaining = dmg;
@@ -1860,16 +1865,26 @@
         break;
       }
       case 'frostNova': {
-        const radius = 74;
-        const dmg = (13 + p.level * 2.5) * p.dmgMult;
+        const broad = R.skillUp(p, 'frostNova', 'a', 1);
+        const deep = R.skillUp(p, 'frostNova', 'b', 1);
+        const shatter = R.skillUp(p, 'frostNova', 'a', 2);
+        const radius = 74 * (broad ? 1.22 : 1);
+        const baseDmg = (13 + p.level * 2.5) * p.dmgMult * (broad ? 1.2 : 1);
+        const freezeTime = 1.6 + (deep ? .6 : 0);
+        const slowPct = .35 + (deep ? .15 : 0);
         let hits = 0;
         for (const e of g.enemies.slice()) {
           if (e.dead) continue;
           if (Math.hypot(e.x - p.x, e.y - p.y) < radius + e.radius) {
-            R.damageEnemy(e, dmg, { type: 'frost', color: COLOR.frost, spell: true, restoreMana: true, slow: .35, slowTime: 2.5 });
-            if (!e.isBoss) e.frozen = Math.max(e.frozen, 1.6);
+            let dmg = baseDmg;
+            if (shatter && e.frozen > 0) dmg *= 1.35;
+            R.damageEnemy(e, dmg, { type: 'frost', color: COLOR.frost, spell: true, restoreMana: true, slow: slowPct, slowTime: 2.5 });
+            if (!e.isBoss) e.frozen = Math.max(e.frozen, freezeTime);
             hits++;
           }
+        }
+        if (R.skillUp(p, 'frostNova', 'b', 2)) {
+          p.cooldowns.frostNova = Math.max(0, (p.cooldowns.frostNova || 0) - Math.min(3, hits) * 1.2);
         }
         R.addEffect({ type: 'rune', x: p.x, y: p.y, r: radius, color: '#9deaff', timer: .55, duration: .55 });
         R.addEffect({ type: 'ring', x: p.x, y: p.y, r: 8, maxR: radius + 12, timer: .45, duration: .45, color: '#9deaff', width: 3 });
@@ -1885,7 +1900,7 @@
         const m = R.input.mouse;
         let tx = m.worldX, ty = m.worldY;
         const d = Math.hypot(tx - p.x, ty - p.y) || 1;
-        const maxD = 110;
+        const maxD = 110 * (R.skillUp(p, 'blink', 'a', 1) ? 1.3 : 1);
         if (d > maxD) {
           tx = p.x + (tx - p.x) / d * maxD;
           ty = p.y + (ty - p.y) / d * maxD;
@@ -1897,6 +1912,8 @@
         p.x = tx;
         p.y = ty;
         p.iframes = Math.max(p.iframes, .35);
+        if (R.skillUp(p, 'blink', 'a', 2)) p.buffs.blinkHaste = 1.5;
+        if (R.skillUp(p, 'blink', 'b', 2)) p.resource = Math.min(p.maxResource, p.resource + 15);
         R.spawnBurst(p.x, p.y - 12, 18, '#b783ec', 2);
         R.addEffect({ type: 'line', x1: ox, y1: oy - 12, x2: tx, y2: ty - 12, color: '#c59bff', width: 4, timer: .26, duration: .26 });
         R.addEffect({ type: 'rune', x: tx, y: ty, r: 26, color: '#c59bff', timer: .38, duration: .38 });
@@ -1912,10 +1929,13 @@
         break;
       }
       case 'iceBarrier': {
-        const amount = Math.round((45 + p.level * 6) * p.shieldBonus);
+        const thick = R.skillUp(p, 'iceBarrier', 'a', 1);
+        const lasting = R.skillUp(p, 'iceBarrier', 'b', 1);
+        const amount = Math.round((45 + p.level * 6) * p.shieldBonus * (thick ? 1.3 : 1));
+        const duration = 5 + p.shieldDurBonus + (lasting ? 2 : 0);
         p.shield = Math.min(p.maxHp * 1.2, p.shield + amount);
-        p.shieldTimer = 5 + p.shieldDurBonus;
-        p.buffs.iceBarrier = 5 + p.shieldDurBonus;
+        p.shieldTimer = duration;
+        p.buffs.iceBarrier = duration;
         R.floatText(p.x, p.y - 35, '护盾 +' + amount, '#a9ecff', 7, .9);
         R.addEffect({ type: 'rune', x: p.x, y: p.y, r: 32, color: '#8fe5ff', timer: .55, duration: .55 });
         R.addEffect({ type: 'ring', x: p.x, y: p.y, r: 6, maxR: 46, timer: .5, duration: .5, color: '#8fe5ff', width: 3 });
@@ -1930,16 +1950,20 @@
         const m = R.input.mouse;
         let tx = clamp(m.worldX, 50, g.worldW - 50);
         let ty = clamp(m.worldY, 56, g.worldH - 44);
-        const radius = 52;
+        const burnPath = R.skillUp(p, 'flamestrike', 'a', 1);
+        const burnPower = R.skillUp(p, 'flamestrike', 'a', 2);
+        const focus = R.skillUp(p, 'flamestrike', 'b', 1);
+        const radius = 52 * (burnPath ? 1.18 : 1) * (focus ? .9 : 1);
         R.addEffect({ type: 'rune', x: tx, y: ty, r: radius, color: '#ff9a4a', timer: .8, duration: .8 });
         R.addEffect({
           type: 'telegraph', x: tx, y: ty, radius, timer: .8, duration: .8, color: '#ff6a32', meteor: true,
           onDone: () => {
             if (g.mode !== 'playing') return;
-            const dmg = (42 + p.level * 5) * p.dmgMult;
+            const dmg = (42 + p.level * 5) * p.dmgMult * (focus ? 1.35 : 1);
+            const burnDps = (2 + (p.passives.ignite || 0) * 2.2) * (burnPower ? 1.5 : 1);
             const hits = aoeEnemies(tx, ty, radius + 8, dmg, {
               type: 'fire', color: COLOR.fire, spell: true, restoreMana: true,
-              burn: 2 + (p.passives.ignite || 0) * 2.2, burnTime: 3
+              burn: burnDps, burnTime: 3 + (burnPath ? 2 : 0)
             });
             R.addEffect({ type: 'ring', x: tx, y: ty, r: 10, maxR: radius + 25, timer: .5, duration: .5, color: '#ff9a4a', width: 4 });
             R.spawnBurst(tx, ty, 30, '#ff9a3e', 3.4);

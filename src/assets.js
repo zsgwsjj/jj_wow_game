@@ -53,9 +53,7 @@
   };
 
   const classes = {
-    warrior: 'assets/classes/warrior.jpg',
-    mage: 'assets/classes/mage.jpg',
-    priest: 'assets/classes/priest.jpg'
+    mage: 'assets/classes/mage.jpg'
   };
 
   const bosses = {

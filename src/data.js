@@ -6,40 +6,6 @@
   'use strict';
 
   const CLASSES = {
-    warrior: {
-      id: 'warrior',
-      name: '战士',
-      en: 'WARRIOR',
-      color: '#c79c6e',
-      glow: '#ffd39b',
-      role: '重甲近战 · 怒气',
-      tagline: '以钢铁与怒吼撕开敌阵。',
-      description: '高生命、高减伤，贴身劈砍积攒怒气。适合喜欢正面压制、在怪堆里旋转到底的玩家。',
-      baseHp: 195,
-      hpPerLevel: 12,
-      baseResource: 100,
-      resourceName: '怒气',
-      resourceColor: '#d64b3c',
-      resourceRegen: 3.2,
-      startResource: 35,
-      armor: 0.10,
-      speed: 78,
-      startingAbility: 'charge',
-      basic: {
-        name: '劈砍',
-        icon: 'cleave',
-        desc: '挥动巨刃，对前方扇形范围内的敌人造成伤害并积攒怒气。',
-        damage: 17,
-        cooldown: 0.55,
-        range: 48,
-        arc: 2.25
-      },
-      stats: [
-        { label: '生存', value: 5 },
-        { label: '爆发', value: 4 },
-        { label: '机动', value: 2 }
-      ]
-    },
     mage: {
       id: 'mage',
       name: '法师',
@@ -59,6 +25,7 @@
       armor: 0,
       speed: 86,
       startingAbility: 'frostNova',
+      fixedSkills: ['frostNova', 'blink', 'flamestrike', 'iceBarrier'],
       basic: {
         name: '火球术',
         icon: 'fireball',
@@ -73,129 +40,9 @@
         { label: '机动', value: 4 }
       ]
     },
-    priest: {
-      id: 'priest',
-      name: '牧师',
-      en: 'PRIEST',
-      color: '#f1dfae',
-      glow: '#fff3c4',
-      role: '神圣治疗 · 法力',
-      tagline: '以圣光维系生命，以惩戒净化黑暗。',
-      description: '生命与护甲都不高，但拥有持续治疗、护盾与远程神圣伤害。用恢复和救赎把每一次受伤变成反击。',
-      baseHp: 132,
-      hpPerLevel: 7,
-      baseResource: 120,
-      resourceName: '法力',
-      resourceColor: '#7fc4ff',
-      resourceRegen: 8.0,
-      startResource: 100,
-      armor: 0.04,
-      speed: 84,
-      startingAbility: 'holyFire',
-      basic: {
-        name: '惩击',
-        icon: 'holybolt',
-        desc: '发射一道圣光，对命中的敌人造成神圣伤害。',
-        damage: 14,
-        cooldown: 0.62,
-        speed: 300
-      },
-      stats: [
-        { label: '生存', value: 3 },
-        { label: '爆发', value: 3 },
-        { label: '机动', value: 4 }
-      ]
-    }
   };
 
   const SKILLS = {
-    warrior: {
-      charge: {
-        id: 'charge', type: 'active', name: '冲锋', icon: 'charge', rarity: 'rare',
-        tag: '位移 · 控制', cost: 15, cooldown: 7,
-        desc: (lv) => '朝鼠标方向猛冲，对路径上的敌人造成 ' + Math.round(26 + lv * 3.5) + ' 点伤害并眩晕 0.8 秒。',
-        flavor: '“为了部落！”'
-      },
-      whirlwind: {
-        id: 'whirlwind', type: 'active', name: '旋风斩', icon: 'whirlwind', rarity: 'epic',
-        tag: '范围 · 持续', cost: 25, cooldown: 6.5,
-        desc: (lv) => '旋转 0.9 秒，每 0.18 秒对周围敌人造成 ' + Math.round(11 + lv * 2.2) + ' 点伤害；旋转期间可以移动。',
-        flavor: '钢铁的风暴，没有死角。'
-      },
-      shieldBlock: {
-        id: 'shieldBlock', type: 'active', name: '盾牌格挡', icon: 'shield', rarity: 'rare',
-        tag: '防御 · 护盾', cost: 20, cooldown: 13,
-        desc: (lv) => '获得相当于最大生命 ' + (32 + lv) + '% 的护盾，持续 4 秒，期间减少 25% 受到的伤害。',
-        flavor: '最好的进攻，是让敌人先撞上盾牌。'
-      },
-      execute: {
-        id: 'execute', type: 'active', name: '致死打击', icon: 'execute', rarity: 'epic',
-        tag: '斩杀 · 爆发', cost: 30, cooldown: 8,
-        desc: (lv) => '对前方敌人造成 ' + Math.round(38 + lv * 5) + ' 点伤害。目标生命低于 30% 时伤害翻倍；击杀会重置冷却。',
-        flavor: '最后一下，总是最安静的。'
-      },
-      heroicLeap: {
-        id: 'heroicLeap', type: 'active', name: '英勇飞跃', icon: 'leap', rarity: 'rare',
-        tag: '位移 · 范围', cost: 15, cooldown: 11,
-        desc: (lv) => '跃向鼠标位置，落地造成 ' + Math.round(24 + lv * 3) + ' 点范围伤害，并使敌人减速 40%，持续 2 秒。',
-        flavor: '战士从不走楼梯。'
-      },
-      bladestorm: {
-        id: 'bladestorm', type: 'active', name: '剑刃风暴', icon: 'bladestorm', rarity: 'epic',
-        tag: '范围 · 免疫', cost: 45, cooldown: 18,
-        desc: (lv) => '化身剑刃风暴 2 秒，每 0.2 秒对周围敌人造成 ' + Math.round(14 + lv * 2.6) + ' 点伤害，期间免疫减速且可以移动。',
-        flavor: '当世界安静下来，只剩刀刃在唱歌。'
-      },
-      ironHide: {
-        id: 'ironHide', type: 'passive', name: '钢铁意志', icon: 'heart', rarity: 'rare', maxRank: 3,
-        tag: '被动 · 生存',
-        desc: (rank) => '最大生命值 +' + (rank * 12) + '%。',
-        flavor: '伤痛只是铠甲上的另一道纹路。'
-      },
-      deepWounds: {
-        id: 'deepWounds', type: 'passive', name: '重伤', icon: 'bleed', rarity: 'rare', maxRank: 3,
-        tag: '被动 · 流血',
-        desc: (rank) => '劈砍会使敌人流血，每秒造成 ' + (2 + rank * 2.5).toFixed(1) + ' 点伤害，持续 4 秒。',
-        flavor: '伤口不会立刻要命，但会一直记得你。'
-      },
-      secondWind: {
-        id: 'secondWind', type: 'passive', name: '第二次呼吸', icon: 'wind', rarity: 'rare', maxRank: 3,
-        tag: '被动 · 回复',
-        desc: (rank) => '3 秒未受到伤害后，每秒回复 ' + (0.8 + rank * 0.8).toFixed(1) + '% 最大生命值。',
-        flavor: '还有一口气，就还能再战。'
-      },
-      bloodlust: {
-        id: 'bloodlust', type: 'passive', name: '嗜血', icon: 'bloodlust', rarity: 'epic', maxRank: 3,
-        tag: '被动 · 急速',
-        desc: (rank) => '击杀敌人获得嗜血，攻击速度 +' + (rank * 10) + '%，持续 5 秒，最多叠加 3 层。',
-        flavor: '鲜血是最好的燃料。'
-      },
-      thickSkin: {
-        id: 'thickSkin', type: 'passive', name: '铜墙铁壁', icon: 'armor', rarity: 'rare', maxRank: 3,
-        tag: '被动 · 减伤',
-        desc: (rank) => '受到的伤害降低 ' + (rank * 5) + '%。',
-        flavor: '让他们砍。砍得动算我输。'
-      },
-      victoryRush: {
-        id: 'victoryRush', type: 'passive', name: '胜利在望', icon: 'victory', rarity: 'rare', maxRank: 3,
-        tag: '被动 · 击杀回复',
-        desc: (rank) => '击杀敌人时回复 ' + (rank * 3) + '% 最大生命值。',
-        flavor: '赢家才有资格喘口气。'
-      },
-      bloodstorm: {
-        id: 'bloodstorm', type: 'rune', name: '血风暴', icon: 'whirlwind', rarity: 'epic', maxRank: 1,
-        tag: '流血',
-        desc: () => '旋风斩与剑刃风暴命中流血目标时，伤害 +30%，刷新流血并回复 2 点怒气。',
-        flavor: '让伤口在风里裂得更深。'
-      },
-      executioner: {
-        id: 'executioner', type: 'rune', name: '处刑者', icon: 'execute', rarity: 'epic', maxRank: 1,
-        tag: '斩杀',
-        desc: () => '致死打击对流血目标视为低血量目标；击杀后重置冲锋冷却并回复 15 点怒气。',
-        flavor: '血已经流了，剩下的只是收尾。'
-      }
-    },
-
     mage: {
       frostNova: {
         id: 'frostNova', type: 'active', name: '冰霜新星', icon: 'frost', rarity: 'rare',
@@ -300,84 +147,79 @@
         flavor: '一场爆炸，往往从温差开始。'
       }
     },
-    priest: {
-      holyFire: {
-        id: 'holyFire', type: 'active', name: '神圣之火', icon: 'holyfire', rarity: 'epic',
-        tag: '神圣 · 灼烧', cost: 25, cooldown: 7.5,
-        desc: (lv) => '发射圣光火球，造成 ' + Math.round(30 + lv * 4.5) + ' 点神圣伤害，并灼烧 3 秒。',
-        flavor: '圣光也会燃烧。'
+  };
+
+  const SKILL_UPGRADES = {
+    frostNova: {
+      a: {
+        name: '寒冰脉冲', icon: 'frost', tag: '冰霜新星 · 范围',
+        flavor: '把寒意压缩成一次更远的爆发。',
+        tiers: [
+          '半径 +22%，伤害 +20%。',
+          '对已冻结目标伤害 +35%，并刷新冻结。'
+        ]
       },
-      powerWordShield: {
-        id: 'powerWordShield', type: 'active', name: '真言术：盾', icon: 'pwshield', rarity: 'rare',
-        tag: '神圣 · 护盾', cost: 22, cooldown: 11,
-        desc: (lv) => '获得相当于最大生命 ' + (26 + lv) + '% 的护盾，持续 5 秒。',
-        flavor: '一句真言，足以挡下刀锋。'
+      b: {
+        name: '深寒', icon: 'frost', tag: '冰霜新星 · 控制',
+        flavor: '冷到连时间都不愿意流动。',
+        tiers: [
+          '冻结时间 +0.6 秒，减速 +15%。',
+          '每命中一个敌人，冰霜新星冷却 -1.2 秒（最多 3 个）。'
+        ]
+      }
+    },
+    blink: {
+      a: {
+        name: '远行', icon: 'blink', tag: '闪现 · 距离',
+        flavor: '再远一点，就够不到你了。',
+        tiers: [
+          '闪现距离 +30%。',
+          '闪现后 1.5 秒内移动速度 +25%。'
+        ]
       },
-      renew: {
-        id: 'renew', type: 'active', name: '恢复', icon: 'renew', rarity: 'rare',
-        tag: '神圣 · 持续治疗', cost: 18, cooldown: 9,
-        desc: (lv) => '在 8 秒内每秒回复 ' + (4 + lv * .8).toFixed(1) + ' 点生命；治疗量受信仰恢复加成。',
-        flavor: '伤口会在光里慢慢合拢。'
+      b: {
+        name: '迅影', icon: 'blink', tag: '闪现 · 节奏',
+        flavor: '快到来不及留下影子。',
+        tiers: [
+          '冷却 -25%。',
+          '闪现回复 15 点法力。'
+        ]
+      }
+    },
+    flamestrike: {
+      a: {
+        name: '灼热大地', icon: 'flamestrike', tag: '烈焰风暴 · 燃烧',
+        flavor: '火雨之后，大地还在燃烧。',
+        tiers: [
+          '半径 +18%，燃烧时间 +2 秒。',
+          '燃烧伤害 +50%。'
+        ]
       },
-      holyNova: {
-        id: 'holyNova', type: 'active', name: '神圣新星', icon: 'holynova', rarity: 'epic',
-        tag: '范围 · 治疗', cost: 35, cooldown: 9,
-        desc: (lv) => '对周围敌人造成 ' + Math.round(24 + lv * 3) + ' 点神圣伤害，并回复 ' + Math.round(10 + lv * 1.5) + ' 点生命；恢复期间治疗量 +50%。',
-        flavor: '圣光从不只照亮一个方向。'
+      b: {
+        name: '集中轰击', icon: 'flamestrike', tag: '烈焰风暴 · 爆发',
+        flavor: '把整片火雨收束成一个落点。',
+        tiers: [
+          '半径 -10%，伤害 +35%。',
+          '冷却 -20%。'
+        ]
+      }
+    },
+    iceBarrier: {
+      a: {
+        name: '坚冰', icon: 'icebarrier', tag: '寒冰护体 · 护盾',
+        flavor: '冰不是挡住伤害，是让伤害变得迟钝。',
+        tiers: [
+          '护盾量 +30%。',
+          '护盾存在时额外减伤 8%。'
+        ]
       },
-      flashHeal: {
-        id: 'flashHeal', type: 'active', name: '快速治疗', icon: 'flashheal', rarity: 'rare',
-        tag: '治疗 · 爆发', cost: 28, cooldown: 8,
-        desc: (lv) => '立即回复 ' + Math.round(30 + lv * 2.2) + '% 最大生命值。',
-        flavor: '有时候，慢一步就来不及了。'
-      },
-      penance: {
-        id: 'penance', type: 'active', name: '苦修', icon: 'penance', rarity: 'epic',
-        tag: '爆发 · 神圣', cost: 35, cooldown: 9,
-        desc: (lv) => '向鼠标方向射出三道扇形圣光，每道造成 ' + Math.round(15 + lv * 1.8) + ' 点神圣伤害并回复 ' + Math.round(5 + lv * .5) + ' 点生命；施放不减速，可以边走边打。',
-        flavor: '赎罪不是终点，是下一道光。'
-      },
-      atonement: {
-        id: 'atonement', type: 'passive', name: '救赎', icon: 'absolution', rarity: 'rare', maxRank: 3,
-        tag: '被动 · 救赎',
-        desc: (rank) => '神圣伤害的 ' + (8 + rank * 4) + '% 转化为自身治疗。',
-        flavor: '你造成的每一道光，也会照回自己。'
-      },
-      spiritTap: {
-        id: 'spiritTap', type: 'passive', name: '精神指引', icon: 'spirit', rarity: 'rare', maxRank: 3,
-        tag: '被动 · 法力',
-        desc: (rank) => '法力回复速度 +' + (rank * 1.5).toFixed(1) + '/秒，最大法力 +' + (rank * 8) + '%。',
-        flavor: '静下来，光会告诉你方向。'
-      },
-      innerFire: {
-        id: 'innerFire', type: 'passive', name: '心灵之火', icon: 'innerfire', rarity: 'rare', maxRank: 3,
-        tag: '被动 · 神圣',
-        desc: (rank) => '神圣伤害 +' + (rank * 7) + '%。',
-        flavor: '信念越坚定，光越炽热。'
-      },
-      renewedFaith: {
-        id: 'renewedFaith', type: 'passive', name: '信仰恢复', icon: 'renew', rarity: 'rare', maxRank: 3,
-        tag: '被动 · 治疗',
-        desc: (rank) => '所有治疗量 +' + (rank * 15) + '%，恢复持续时间 +' + rank + ' 秒。',
-        flavor: '光会记得每一个没有放弃的人。'
-      },
-      focusedWill: {
-        id: 'focusedWill', type: 'passive', name: '专注意志', icon: 'heal', rarity: 'rare', maxRank: 3,
-        tag: '被动 · 减伤',
-        desc: (rank) => '受到伤害后 4 秒内减伤 ' + (rank * 6) + '%。',
-        flavor: '疼痛让人清醒，也让人专注。'
-      },
-      benediction: {
-        id: 'benediction', type: 'rune', name: '祝福', icon: 'heal', rarity: 'epic', maxRank: 1,
-        tag: '恢复 · 神圣',
-        desc: () => '恢复每跳使神圣之火冷却 -0.5 秒；恢复期间神圣伤害 +12%。',
-        flavor: '每一次愈合，都在为下一次燃烧倒数。'
-      },
-      sanctified: {
-        id: 'sanctified', type: 'rune', name: '圣化', icon: 'holynova', rarity: 'epic', maxRank: 1,
-        tag: '恢复 · 神圣',
-        desc: () => '神圣新星对带有恢复的目标额外治疗 35%，并延长恢复 2 秒。',
-        flavor: '把光留在伤口上，也留在战场上。'
+      b: {
+        name: '持久', icon: 'icebarrier', tag: '寒冰护体 · 持续',
+        flavor: '让这层冰，留得再久一点。',
+        tiers: [
+          '持续时间 +2 秒。',
+          '护盾存在时移动速度 +10%。'
+        ]
       }
     }
   };
@@ -598,16 +440,6 @@
       desc: () => '伤害 +18%，技能冷却 -10%，技能消耗 +15%。'
     },
     {
-      id: 'holyEcho', type: 'relic', name: '圣光回响', icon: 'holyfire', rarity: 'relic', classOnly: 'priest',
-      tag: '首领遗物 · 治疗', flavor: '光不会消失，只会换一种方式照回来。',
-      desc: () => '治疗量 +25%；过量治疗会转化为护盾（上限 15% 最大生命）。'
-    },
-    {
-      id: 'shadowPact', type: 'relic', name: '暗影契约', icon: 'skull', rarity: 'relic', classOnly: 'priest',
-      tag: '首领遗物 · 救赎', flavor: '圣光与暗影，本就是一体的两面。',
-      desc: () => '伤害 +25%，治疗 -20%，救赎转化效果 +100%。'
-    },
-    {
       id: 'fateDie', type: 'relic', name: '命运之骰', icon: 'time', rarity: 'relic',
       tag: '首领遗物 · 选择', flavor: '骰子落地前，命运仍有第二种写法。',
       desc: () => '立即获得 1 次三选一刷新机会。'
@@ -659,7 +491,7 @@
   };
 
   window.GameData = {
-    CLASSES, SKILLS, GENERIC_SKILLS, DUNGEONS, RARITY, BALANCE, WAVE_TOTAL, BOSS_RELICS, CURSES,
+    CLASSES, SKILLS, GENERIC_SKILLS, SKILL_UPGRADES, DUNGEONS, RARITY, BALANCE, WAVE_TOTAL, BOSS_RELICS, CURSES,
     getSkill(classId, id) {
       return (SKILLS[classId] && SKILLS[classId][id]) || GENERIC_SKILLS[id] || null;
     }
