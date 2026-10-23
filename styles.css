@@ -489,17 +489,6 @@ kbd {
 .auto-attack-btn:hover { border-color: #b0884b; }
 .auto-attack-btn:focus-visible { outline: 1px solid #d3a85e; outline-offset: 2px; }
 
-/* interact & prompts */
-.interact-prompt {
-  position: absolute; left: 50%; bottom: 9.1cqw; transform: translateX(-50%);
-  display: flex; align-items: center; gap: .55cqw;
-  padding: .4cqw .9cqw;
-  background: rgba(8, 10, 14, .9); border: 1px solid #80643a;
-  color: #f3e1b9; font-size: .82cqw; letter-spacing: .12em;
-  box-shadow: 0 0 24px rgba(219, 176, 96, .14), 0 6px 18px rgba(0,0,0,.5);
-  animation: promptPulse 1.8s ease-in-out infinite;
-}
-.interact-prompt kbd { color: #2a1b08; background: linear-gradient(#f3d391, #c99a4d); border-color: #f7e1ad; font-weight: 800; }
 .toast-layer {
   position: absolute; right: 1.35cqw; bottom: 10.4cqw;
   width: 22cqw; display: flex; flex-direction: column; align-items: flex-end; gap: .35cqw;
@@ -890,7 +879,6 @@ kbd {
   100% { opacity: 0; transform: translate(-50%, -.5cqw); }
 }
 @keyframes bossBarIn { from { opacity: 0; transform: translate(-50%, -1cqw); } to { opacity: 1; transform: translate(-50%, 0); } }
-@keyframes promptPulse { 0%, 100% { box-shadow: 0 0 18px rgba(219,176,96,.1), 0 6px 18px rgba(0,0,0,.5); } 50% { box-shadow: 0 0 30px rgba(219,176,96,.25), 0 6px 18px rgba(0,0,0,.5); } }
 @keyframes waveText {
   0% { opacity: 0; transform: translate(-50%, 0) scale(.94); filter: blur(5px); letter-spacing: .5em; }
   18% { opacity: 1; transform: translate(-50%, -1.1cqw) scale(1); filter: blur(0); letter-spacing: .35em; }

@@ -89,7 +89,7 @@
     updateTexts(dt);
     updateCamera(dt);
     R.syncMouseWorld();
-    updateInteract();
+    updatePortal();
     R.updateHUD();
     if (R.updateBossUI) R.updateBossUI();
   };
@@ -2136,11 +2136,11 @@
     G().shake = Math.max(G().shake, n);
   };
 
-  function updateInteract() {
+  function updatePortal() {
     const g = G();
     const p = g.player;
     if (!p) return;
-    // 宝箱改为触碰自动开启，无需按 F
+    // 宝箱：触碰自动开启
     for (const c of g.chests) {
       if (c.opened) continue;
       if (Math.hypot(c.x - p.x, c.y - p.y) < 30) {
@@ -2148,18 +2148,18 @@
         return;
       }
     }
-    let text = null;
+    // 传送门：离开出生点后，走入范围自动进入
     for (const portal of g.portals) {
-      if (Math.hypot(portal.x - p.x, portal.y - p.y) < 55) {
-        text = g.stageIndex >= D.DUNGEONS.length - 1 ? '离开裂隙' : '进入下一副本';
-        break;
+      const d = Math.hypot(portal.x - p.x, portal.y - p.y);
+      if (!portal.armed) {
+        if (d > 50) portal.armed = true;
+        continue;
       }
-    }
-    if (text) {
-      R.UI.interactText.textContent = text;
-      R.UI.interact.classList.remove('hidden');
-    } else {
-      R.UI.interact.classList.add('hidden');
+      if (d < 34) {
+        AudioEngine.sfx('portal');
+        R.enterPortal();
+        return;
+      }
     }
   }
 

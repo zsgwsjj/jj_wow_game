@@ -76,7 +76,6 @@
     minimap: $('minimap'),
     waveAnnounce: $('wave-announce'),
     toastLayer: $('toast-layer'),
-    interact: $('interact-prompt'), interactText: $('interact-text'),
     abilityBar: $('ability-bar'), basicSlot: $('basic-slot'), abilitySlots: $('ability-slots'),
     passiveBar: $('passive-bar'), passiveRow: $('passive-row'), passiveLabel: $('passive-label'),
     hint: document.querySelector('.hint-bar'),
@@ -299,7 +298,7 @@
 
   function onKeyDown(e) {
     const code = e.code;
-    if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Space', 'KeyF', 'KeyT', 'Digit1', 'Digit2', 'Digit3', 'Digit4', 'Numpad1', 'Numpad2', 'Numpad3', 'Numpad4', 'Escape'].includes(code)) {
+    if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Space', 'KeyT', 'Digit1', 'Digit2', 'Digit3', 'Digit4', 'Numpad1', 'Numpad2', 'Numpad3', 'Numpad4', 'Escape'].includes(code)) {
       if (!e.repeat) e.preventDefault();
     }
     if (window.Achievements && Achievements.isOpen()) {
@@ -346,7 +345,6 @@
     if (code === 'Digit3' || code === 'Numpad3') slot = 2;
     if (code === 'Digit4' || code === 'Numpad4') slot = 3;
     if (slot >= 0) { R.useAbility(slot); return; }
-    if (code === 'KeyF') R.interact();
   }
 
   R.updateMusicButton = function () {
@@ -787,14 +785,13 @@
     R.UI.bossPanel.classList.add('hidden');
     R.UI.endScreen.classList.remove('victory');
     R.rebuildAbilityBar();
-    R.hideInteract();
     R.startDungeon(0, true);
     R.updateHUD();
     if (window.Achievements) {
       Achievements.beginRun(classId);
       Achievements.refreshChrome();
     }
-    setTimeout(() => R.toast('提示：触碰宝箱自动开启；传送门按 F 进入', '', 'chest'), 3400);
+    setTimeout(() => R.toast('提示：触碰宝箱自动开启；走入传送门自动进入下一副本', '', 'chest'), 3400);
   };
 
   R.startDungeon = function (index, initial) {
@@ -891,7 +888,6 @@
     R.showStageBanner(dungeon);
     AudioEngine.setMood(index);
     if (!initial) R.toast('进入副本 · ' + dungeon.name, 'good');
-    R.hideInteract();
   };
 
   R.makeProps = function (dungeon, index) {
@@ -951,7 +947,24 @@
   };
 
   R.spawnPortal = function (x, y) {
-    R.game.portals.push({ x, y, timer: 0, seed: Math.random() * 10 });
+    const g = R.game;
+    const p = g.player;
+    // 传送门不要压在宝箱/玩家脚下：在附近找一个没有障碍物的落点。
+    const offsets = [
+      [0, -78], [78, 0], [-78, 0], [0, 78],
+      [58, -58], [-58, -58], [58, 58], [-58, 58]
+    ];
+    let sx = x;
+    let sy = y;
+    for (const [ox, oy] of offsets) {
+      const tx = Math.max(56, Math.min(g.worldW - 56, x + ox));
+      const ty = Math.max(70, Math.min(g.worldH - 56, y + oy));
+      if (R.propAt(tx, ty, 12)) continue;
+      sx = tx;
+      sy = ty;
+      if (!p || Math.hypot(sx - p.x, sy - p.y) >= 48) break;
+    }
+    g.portals.push({ x: sx, y: sy, timer: 0, seed: Math.random() * 10, armed: false });
   };
 
   R.enterPortal = function () {
@@ -961,17 +974,6 @@
     } else {
       R.startDungeon(g.stageIndex + 1, false);
       R.toast('深入裂隙 · 生命恢复 25%', 'good');
-    }
-  };
-
-  R.interact = function () {
-    const g = R.game;
-    if (g.mode !== 'playing') return;
-    const p = g.player;
-    // 宝箱由触碰自动开启；F 只处理传送门
-    for (const portal of g.portals) {
-      const d = Math.hypot(portal.x - p.x, portal.y - p.y);
-      if (d < 48) { AudioEngine.sfx('portal'); R.enterPortal(); return; }
     }
   };
 
@@ -1021,7 +1023,6 @@
     R.UI.endScreen.classList.add('hidden');
     R.UI.stageBanner.classList.remove('show');
     R.UI.title.classList.remove('hidden');
-    R.hideInteract();
     R.UI.tooltip.classList.add('hidden');
     R.input.mouse.down = false;
   };
@@ -1041,7 +1042,6 @@
     g.choiceContext = null;
     g.levelChoices = [];
     R.UI.pauseScreen.classList.add('hidden');
-    R.hideInteract();
     R.input.mouse.down = false;
     R.UI.endScreen.classList.toggle('victory', victory);
     R.UI.endKicker.textContent = victory ? 'EXPEDITION COMPLETE' : 'EXPEDITION ENDED';
@@ -1135,10 +1135,6 @@
 
   R.updateObjective = function (text) {
     if (R.UI.objective) R.UI.objective.textContent = text;
-  };
-
-  R.hideInteract = function () {
-    R.UI.interact.classList.add('hidden');
   };
 
   R.takeDamageFlash = function () {
