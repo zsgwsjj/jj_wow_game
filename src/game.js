@@ -374,7 +374,7 @@
     const on = !!R.input.autoAttack;
     btn.classList.toggle('is-on', on);
     btn.setAttribute('aria-pressed', on ? 'true' : 'false');
-    btn.title = on ? '自动攻击：开 (T)' : '自动攻击：关 (T)';
+    btn.title = on ? '自动攻击：开 (T) · 鼠标方向' : '自动攻击：关 (T)';
   };
 
   R.toggleAutoAttack = function () {

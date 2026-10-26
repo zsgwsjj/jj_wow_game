@@ -218,16 +218,11 @@
         p.moving = false;
       }
     }
-    // 攻击：按住左键 = 手动瞄准；松开 = 自动攻击最近目标
+    // 攻击：按住左键 = 手动射击；开启自动攻击后，仍按鼠标方向射击，不再自动索敌
     if (p.attackCd <= 0 && !p.channel && !p.leap && !p.dash && p.stun <= 0 && g.mode === 'playing') {
-      if (R.input.mouse.down) {
+      if (R.input.mouse.down || R.input.autoAttack) {
+        p.aim = aimAtMouse(p);
         performBasic();
-      } else if (R.input.autoAttack) {
-        const target = findAutoTarget(p);
-        if (target) {
-          p.aim = Math.atan2(target.y - 10 - (p.y - 12), target.x - p.x);
-          performBasic();
-        }
       }
     }
     // 障碍物碰撞；跃起时可越过矮障碍
@@ -370,23 +365,6 @@
     }
     return true;
   };
-
-  function findAutoTarget(p) {
-    const g = G();
-    const range = p.classId === 'warrior' ? (p.cls.basic.range + 18) : 330;
-    let best = null;
-    let bestD = Infinity;
-    for (const e of g.enemies) {
-      if (e.dead) continue;
-      const d = Math.hypot(e.x - p.x, e.y - p.y);
-      if (d <= range + e.radius && d < bestD) {
-        if (p.classId !== 'warrior' && !R.hasLineOfSight(p.x, p.y - 10, e.x, e.y - 8)) continue;
-        bestD = d;
-        best = e;
-      }
-    }
-    return best;
-  }
 
   function performBasic() {
     const g = G();
@@ -1013,10 +991,10 @@
       x, y,
       radius: mob.radius || 10,
       scale: (mob.scale || 1) * (opts.scaleMult || 1),
-      maxHp: Math.round(mob.hp * (1 + stage * D.BALANCE.mobHpPerStage) * hpMult),
+      maxHp: Math.round(mob.hp * D.BALANCE.mobHpBaseMult * (1 + stage * D.BALANCE.mobHpPerStage) * hpMult),
       hp: 0,
       damage: mob.dmg * (1 + stage * D.BALANCE.mobDamagePerStage),
-      speed: mob.speed,
+      speed: mob.speed * D.BALANCE.mobSpeedMult,
       xp: Math.round(mob.xp * (1 + stage * .16)),
       aim: 0,
       attackCd: rand(.2, .8),
@@ -1152,10 +1130,10 @@
       x, y,
       radius: data.radius,
       scale: data.scale,
-      maxHp: Math.round(data.hp * (1 + stage * D.BALANCE.bossHpPerStage)),
+      maxHp: Math.round(data.hp * D.BALANCE.bossHpBaseMult * (1 + stage * D.BALANCE.bossHpPerStage)),
       hp: 0,
       damage: data.dmg * (1 + stage * D.BALANCE.bossDamagePerStage),
-      speed: data.speed,
+      speed: data.speed * D.BALANCE.bossSpeedMult,
       xp: data.xp,
       aim: Math.PI / 2,
       attackCd: 1.1,
