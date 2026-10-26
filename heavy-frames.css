@@ -738,3 +738,62 @@
   border-color: #376273;
   background: rgba(30, 70, 84, .32);
 }
+
+/* 连锁击杀反馈 */
+.combo-hud {
+  position: absolute; left: 50%; bottom: 12.15cqw; transform: translateX(-50%);
+  z-index: 9; display: flex; align-items: center; gap: .42cqw;
+  padding: .24cqw .72cqw .28cqw;
+  min-width: 7.6cqw;
+  background: linear-gradient(180deg, rgba(20, 18, 24, .92), rgba(7, 8, 12, .94));
+  border-top: 1px solid rgba(173, 145, 95, .32);
+  border-bottom: 1px solid rgba(70, 53, 38, .42);
+  box-shadow: 0 8px 24px rgba(0,0,0,.45);
+  pointer-events: none; transition: opacity .15s ease, transform .15s ease;
+}
+.combo-hud.hidden { display: none; }
+.combo-hud .combo-spark { color: #e4bd76; font-size: .75cqw; text-shadow: 0 0 12px rgba(228,189,118,.4); }
+.combo-hud b {
+  color: #ffe6ad; font-family: var(--mono); font-size: 1.05cqw;
+  letter-spacing: .02em; text-shadow: 0 2px 0 #0a0703;
+}
+.combo-hud .combo-caption {
+  color: #9d8769; font-size: .52cqw; letter-spacing: .18em;
+}
+.combo-track {
+  width: 3.2cqw; height: .18cqw; display: block; overflow: hidden;
+  background: #241c18; border: 1px solid #070707;
+}
+.combo-track span {
+  display: block; height: 100%; width: 0;
+  background: linear-gradient(90deg, #8a6130, #f0cf86);
+  box-shadow: 0 0 8px rgba(240,207,134,.4);
+}
+.combo-hud.hot { border-top-color: rgba(196, 126, 255, .65); box-shadow: 0 8px 30px rgba(118, 52, 170, .24); }
+.combo-hud.hot b { color: #e9c7ff; text-shadow: 0 0 12px rgba(196,126,255,.42); }
+.combo-hud.hot .combo-track span { background: linear-gradient(90deg, #7d4ab0, #e6c8ff); }
+.combo-hud.bump .combo-spark { animation: comboBump .22s ease-out; }
+#combo-flash {
+  position: absolute; inset: 0; z-index: 21; pointer-events: none; opacity: 0;
+  background: radial-gradient(circle at 50% 55%, rgba(201,166,255,.22), transparent 32%, rgba(112,48,174,.12) 65%, transparent 85%);
+  mix-blend-mode: screen;
+}
+#combo-flash.show { animation: comboFlash .3s ease-out; }
+@keyframes comboFlash {
+  0% { opacity: .9; }
+  100% { opacity: 0; }
+}
+@keyframes comboBump {
+  0% { transform: scale(1); }
+  45% { transform: scale(1.7) rotate(18deg); }
+  100% { transform: scale(1); }
+}
+
+.combo-hud {
+  min-width: 8.4cqw;
+  padding: .3cqw .85cqw .34cqw;
+}
+.combo-hud b { font-size: 1.28cqw; }
+.combo-hud .combo-caption { font-size: .58cqw; }
+.combo-hud .combo-spark { font-size: .86cqw; }
+.combo-track { width: 3.7cqw; height: .2cqw; }

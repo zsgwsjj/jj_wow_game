@@ -20,19 +20,19 @@
       baseResource: 100,
       resourceName: '法力',
       resourceColor: '#3f8fe8',
-      resourceRegen: 7.0,
+      resourceRegen: 8.5,
       startResource: 100,
       armor: 0,
-      speed: 86,
+      speed: 92,
       startingAbility: 'frostNova',
       fixedSkills: ['frostNova', 'blink', 'flamestrike', 'iceBarrier'],
       basic: {
         name: '火球术',
         icon: 'fireball',
         desc: '向鼠标方向发射一枚火球，命中敌人后造成火焰伤害。',
-        damage: 14,
-        cooldown: 0.5,
-        speed: 270
+        damage: 16,
+        cooldown: 0.42,
+        speed: 310
       },
       stats: [
         { label: '生存', value: 2 },
@@ -46,13 +46,13 @@
     mage: {
       frostNova: {
         id: 'frostNova', type: 'active', name: '冰霜新星', icon: 'frost', rarity: 'rare',
-        tag: '范围 · 冻结', cost: 20, cooldown: 9,
+        tag: '范围 · 冻结', cost: 18, cooldown: 7,
         desc: (lv) => '冻结周围敌人 1.6 秒，并造成 ' + Math.round(13 + lv * 2.5) + ' 点冰霜伤害。',
         flavor: '时间在零度以下会变得很慢。'
       },
       blink: {
         id: 'blink', type: 'active', name: '闪现', icon: 'blink', rarity: 'rare',
-        tag: '位移 · 无敌', cost: 15, cooldown: 6,
+        tag: '位移 · 无敌', cost: 12, cooldown: 5,
         desc: () => '朝鼠标方向瞬移 110 距离，并获得 0.35 秒无敌。留下奥术残影。',
         flavor: '法师的撤退，也是一种艺术。'
       },
@@ -64,13 +64,13 @@
       },
       iceBarrier: {
         id: 'iceBarrier', type: 'active', name: '寒冰护体', icon: 'icebarrier', rarity: 'rare',
-        tag: '防御 · 护盾', cost: 25, cooldown: 12,
+        tag: '防御 · 护盾', cost: 22, cooldown: 10,
         desc: (lv) => '获得 ' + Math.round(45 + lv * 6) + ' 点护盾，持续 5 秒。护盾存在时，受到的伤害降低 10%。',
         flavor: '冰不会替你战斗，但会替你挨打。'
       },
       flamestrike: {
         id: 'flamestrike', type: 'active', name: '烈焰风暴', icon: 'flamestrike', rarity: 'epic',
-        tag: '范围 · 延迟', cost: 40, cooldown: 10,
+        tag: '范围 · 延迟', cost: 35, cooldown: 8,
         desc: (lv) => '在鼠标位置降下火雨，0.8 秒后造成 ' + Math.round(42 + lv * 5) + ' 点范围伤害，并点燃敌人 3 秒。',
         flavor: '别站在火里。真的。'
       },
@@ -477,7 +477,7 @@
     mobDamagePerStage: 0.17,
     bossHpPerStage: 0.23,
     bossDamagePerStage: 0.14,
-    chestChance: 0.025,
+    chestChance: 0.035,
     bossChestChance: 1,
     maxActives: 4
   };

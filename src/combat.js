@@ -67,6 +67,7 @@
     }
     g.runTime += dt;
     g.time += dt;
+    R.updateCombo(dt);
     g.shake = Math.max(0, g.shake - dt * 22);
     if (g.hintTimer > 0) {
       g.hintTimer -= dt;
@@ -1284,6 +1285,9 @@
     if (!opts.dot && p && p.lowHpDamageMult > 1 && p.hp / p.maxHp < .3) {
       adjusted *= p.lowHpDamageMult;
     }
+    if (!opts.dot && !opts.noCombo && p && g.combo > 0) {
+      adjusted *= 1 + Math.min(15, g.combo) * .012;
+    }
     if (!opts.dot && p) {
       const runes = p.runes || {};
       // 基础联动：火破冰、冰爆燃、流血目标吃旋风
@@ -1445,6 +1449,65 @@
     }
   }
 
+  R.updateCombo = function (dt) {
+    const g = G();
+    if (!g.combo) return;
+    if (g.comboTimer > 0) {
+      g.comboTimer = Math.max(0, g.comboTimer - dt);
+      if (g.comboTimer <= 0) {
+        g.combo = 0;
+        if (R.updateComboHUD) R.updateComboHUD();
+      }
+    }
+  };
+
+  R.addComboKill = function (e, opts) {
+    const g = G();
+    const p = g.player;
+    if (!p || (opts && opts.noCombo)) return;
+    g.combo = Math.min(99, (g.combo || 0) + 1);
+    g.comboTimer = 2.6;
+    g.bestCombo = Math.max(g.bestCombo || 0, g.combo);
+    p.resource = Math.min(p.maxResource, p.resource + p.maxResource * .035);
+    for (const id of Object.keys(p.cooldowns || {})) {
+      p.cooldowns[id] = Math.max(0, p.cooldowns[id] - .28);
+    }
+    const hot = Math.min(10, g.combo);
+    g.hitstop = Math.max(g.hitstop, .016);
+    g.shake = Math.max(g.shake, 2.2 + hot * .22);
+    R.spawnBurst(e.x, e.y - 12, 10 + hot * 2, g.combo >= 10 ? '#d9b4ff' : '#ffd37a', 2.2 + hot * .05);
+    if (g.combo >= 2) {
+      R.floatText(e.x, e.y - 42, 'x' + g.combo, g.combo >= 10 ? '#e5c4ff' : '#ffe0a0', 7 + Math.min(4, g.combo * .18), .75);
+    }
+    if (R.flashCombo && g.combo >= 5) R.flashCombo(g.combo >= 10 ? '#c99cff' : '#f0c778');
+    if (g.combo % 5 === 0) R.arcaneOverload(g.combo);
+    if (R.updateComboHUD) R.updateComboHUD();
+  };
+
+  R.arcaneOverload = function (stacks) {
+    const g = G();
+    const p = g.player;
+    if (!p) return;
+    const power = Math.min(20, stacks || 5);
+    const radius = 82 + power * 2.2;
+    const dmg = (18 + p.level * 2.8) * p.dmgMult * (1 + power * .022);
+    const hits = aoeEnemies(p.x, p.y, radius, dmg, {
+      type: 'arcane', color: '#c9a6ff', spell: true, noCombo: true,
+      knockback: 18, big: true, silent: true
+    });
+    p.resource = Math.min(p.maxResource, p.resource + p.maxResource * .08);
+    R.addEffect({ type: 'rune', x: p.x, y: p.y, r: radius, color: '#c9a6ff', timer: .65, duration: .65 });
+    R.addEffect({ type: 'ring', x: p.x, y: p.y, r: 10, maxR: radius + 18, timer: .5, duration: .5, color: '#e1c7ff', width: 4 });
+    R.spawnBurst(p.x, p.y - 12, 34, '#d7b2ff', 3.4);
+    R.spawnBurst(p.x, p.y - 12, 18, '#fff0c4', 2.2);
+    R.floatText(p.x, p.y - 48, '奥术过载!', '#ead6ff', 8.5, .9);
+    if (hits) R.floatText(p.x, p.y - 34, '命中 ' + hits, '#c9a6ff', 6, .6);
+    g.hitstop = Math.max(g.hitstop, .07);
+    g.shake = Math.max(g.shake, 9);
+    if (R.flashCombo) R.flashCombo('#c9a6ff');
+    AudioEngine.sfx('arcane');
+  };
+
   R.killEnemy = function (e, opts) {
     opts = opts || {};
     if (!e || e.dead) return;
@@ -1487,6 +1550,9 @@
       R.addEffect({ type: 'ring', x: e.x, y: e.y, r: 12, maxR: 160, timer: 1.1, duration: 1.1, color: '#ffd37a', width: 5 });
       g.shake = 16;
       g.hitstop = .18;
+      g.combo = 0;
+      g.comboTimer = 0;
+      if (R.updateComboHUD) R.updateComboHUD();
       if (g.player) {
         g.player.hp = Math.min(g.player.maxHp, g.player.hp + g.player.maxHp * .12);
         g.player.resource = Math.min(g.player.maxResource, g.player.resource + g.player.maxResource * .35);
@@ -1503,6 +1569,7 @@
 
     // 普通小怪
     const p = g.player;
+    if (!opts.noCombo) R.addComboKill(e, opts);
     if (p) {
       if (p.classId === 'warrior') {
         if (p.passives.bloodlust) {

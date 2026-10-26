@@ -797,6 +797,37 @@
   /* =========================================================
      HUD
      ========================================================= */
+  R.updateComboHUD = function () {
+    const el = UI.comboHud;
+    if (!el) return;
+    const g = R.game;
+    const active = (g.combo || 0) >= 2 && (g.comboTimer || 0) > 0;
+    el.classList.toggle('hidden', !active);
+    if (!active) {
+      el.dataset.last = '0';
+      return;
+    }
+    UI.comboCount.textContent = 'x' + g.combo;
+    UI.comboFill.style.width = clamp(g.comboTimer / 2.6, 0, 1) * 100 + '%';
+    el.classList.toggle('hot', g.combo >= 10);
+    if (el.dataset.last !== String(g.combo)) {
+      el.dataset.last = String(g.combo);
+      el.classList.remove('bump');
+      void el.offsetWidth;
+      el.classList.add('bump');
+    }
+  };
+
+  R.flashCombo = function (color) {
+    const el = UI.comboFlash;
+    if (!el) return;
+    el.classList.remove('show');
+    void el.offsetWidth;
+    el.classList.add('show');
+    clearTimeout(R._comboFlashTimer);
+    R._comboFlashTimer = setTimeout(() => el.classList.remove('show'), 320);
+  };
+
   R.updateHUD = function () {
     const g = R.game;
     const p = g.player;
@@ -816,6 +847,7 @@
     R.updateBuffRow(p);
     R.updatePassiveRow(p);
     R.updateAbilityHUD();
+    R.updateComboHUD();
   };
 
   R.rebuildAbilityBar = function () {

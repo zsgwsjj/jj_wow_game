@@ -103,6 +103,10 @@
     retryBtn: $('retry-btn'), endTitleBtn: $('end-title-btn'),
     tooltip: $('tooltip'),
     damageFlash: $('damage-flash'),
+    comboHud: $('combo-hud'),
+    comboCount: $('combo-count'),
+    comboFill: $('combo-fill'),
+    comboFlash: $('combo-flash'),
     touchHint: $('touch-hint')
   };
   R.ctx = R.UI.canvas.getContext('2d');
@@ -162,6 +166,9 @@
     levelChoices: [],
     rerolls: 1,
     bossRelicDone: false,
+    combo: 0,
+    comboTimer: 0,
+    bestCombo: 0,
     time: 0,
     visualTime: 0,
     hintTimer: 0,
@@ -920,6 +927,9 @@
     g.levelChoices = [];
     g.rerolls = 1;
     g.bossRelicDone = false;
+    g.combo = 0;
+    g.comboTimer = 0;
+    g.bestCombo = 0;
     g.hintTimer = 16;
     g.phase = 'intro';
     g.boss = null;
@@ -994,6 +1004,8 @@
     g.bossDefeated = false;
     g.bossChest = null;
     g.bossRelicDone = false;
+    g.combo = 0;
+    g.comboTimer = 0;
     if (R.UI.toastLayer) R.UI.toastLayer.innerHTML = '';
     g.phase = 'intro';
     g.wave = 0;
@@ -1219,6 +1231,7 @@
       ['英雄等级', 'Lv.' + (g.player ? g.player.level : 1)],
       ['击杀', String(g.stats.kills)],
       ['宝箱', String(g.stats.chests)],
+      ['最高连锁', 'x' + (g.bestCombo || 0)],
       ['造成伤害', Math.round(g.stats.damage).toLocaleString('en-US')],
       ['远征用时', R.formatTime(g.runTime)]
     ];
